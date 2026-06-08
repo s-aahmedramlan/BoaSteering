@@ -25,6 +25,12 @@ async function runMigrations(): Promise<void> {
     )
   `);
 
+  await pool.query(`ALTER TABLE facts ADD COLUMN IF NOT EXISTS authors text[] NOT NULL DEFAULT '{}'`);
+  await pool.query(`UPDATE facts SET authors = ARRAY[author] WHERE author != '' AND array_length(authors, 1) IS NULL`);
+  await pool.query(`ALTER TABLE facts ADD COLUMN IF NOT EXISTS dismissed boolean NOT NULL DEFAULT false`);
+  await pool.query(`ALTER TABLE facts ADD COLUMN IF NOT EXISTS promoted_at timestamp`);
+  await pool.query(`ALTER TABLE facts ADD COLUMN IF NOT EXISTS promoted_to text`);
+
   // HNSW index for fast approximate nearest-neighbour search
   await pool.query(`
     CREATE INDEX IF NOT EXISTS facts_embedding_idx

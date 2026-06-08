@@ -5,6 +5,8 @@ const MAX_FACTS_FALLBACK = 3;
 const MAX_INJECTED_TOKENS = 300;
 const CHARS_PER_TOKEN = 4;
 
+const SAVE_FACT_INSTRUCTION = `If you learn something org-specific about this codebase or team that a coding agent would otherwise get wrong — a convention, constraint, or correction — call the save_fact tool immediately with a single clear sentence. Do NOT call it for general programming knowledge, one-off fixes, or anything in standard docs.`;
+
 export interface RetrievalContext {
   systemPrompt: string;
   repo: string;
@@ -31,12 +33,16 @@ export async function retrieveAndInject(ctx: RetrievalContext): Promise<string> 
     return ctx.systemPrompt;
   }
 
-  if (facts.length === 0) return ctx.systemPrompt;
+  if (facts.length === 0) {
+    return SAVE_FACT_INSTRUCTION + '\n\n' + ctx.systemPrompt;
+  }
 
   const injectedBlock = buildInjectedBlock(facts);
   await incrementHitCounts(facts.map((f) => f.id));
 
-  return injectedBlock + '\n\n' + ctx.systemPrompt;
+  console.log(`[boa:retriever] injecting ${facts.length} fact(s) (~${Math.round(injectedBlock.length / 4)} tokens) | file_paths matched: ${filePaths.length}`);
+
+  return SAVE_FACT_INSTRUCTION + '\n\n' + injectedBlock + '\n\n' + ctx.systemPrompt;
 }
 
 async function retrieveFacts(filePaths: string[], repo: string): Promise<RetrievedFact[]> {

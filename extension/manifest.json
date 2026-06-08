@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "Boa",
+  "version": "1.0.0",
+  "description": "Captures facts from Claude.ai conversations into Boa",
+  "permissions": ["storage", "alarms"],
+  "host_permissions": ["https://claude.ai/*"],
+  "content_scripts": [{
+    "matches": ["https://claude.ai/*"],
+    "js": ["content.js"],
+    "run_at": "document_idle"
+  }],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Boa"
+  },
+  "background": {
+    "service_worker": "background.js"
+  }
+}

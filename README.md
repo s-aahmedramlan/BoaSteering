@@ -85,6 +85,26 @@ import { flagStaleFacts } from './src/staleness';
 await flagStaleFacts(); // logs stale facts to console
 ```
 
+## Browser extension (Claude.ai)
+
+A lightweight Chrome extension lives in the `extension/` folder. It scrapes conversations from `claude.ai` and sends them to Boa so facts are captured even when you are chatting interactively rather than through a tool.
+
+### Loading the extension
+
+1. Open `chrome://extensions` in Chrome.
+2. Enable **Developer mode** (toggle in the top-right corner).
+3. Click **Load unpacked** and select the `extension/` folder from this repository.
+
+### Usage
+
+- Make sure Boa is running on port 3333 (`npm run dev` or `npm start`).
+- Navigate to any conversation on `https://claude.ai`.
+- The extension auto-syncs every **5 minutes** whenever the conversation changes.
+- Click the **Boa** toolbar icon and press **Sync now** to trigger an immediate sync.
+- The popup shows how many new facts were stored, or tells you if Boa is not running.
+
+The extension never alerts or throws errors — if Boa is offline the sync is silently skipped and retried on the next interval.
+
 ## Database schema
 
 ```sql

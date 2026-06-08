@@ -4,6 +4,7 @@ interface FactRow {
   id: string;
   verified: boolean;
   hit_count: number;
+  authors: string[];
   created_at: Date;
   content: string;
 }
@@ -11,21 +12,21 @@ interface FactRow {
 export async function listFacts(): Promise<void> {
   const pool = getPool();
   const result = await pool.query<FactRow>(
-    `SELECT id, verified, hit_count, created_at, content
+    `SELECT id, verified, hit_count, authors, created_at, content
      FROM facts
      ORDER BY created_at DESC`,
   );
 
-  const header = 'ID        VER  HITS  CREATED     CONTENT';
+  const header = 'ID        AUTHORS  HITS  CREATED     CONTENT';
   console.log(header);
 
   for (const row of result.rows) {
     const id = row.id.slice(0, 8);
-    const ver = row.verified ? '✓' : '-';
+    const authorCount = Array.isArray(row.authors) ? row.authors.length : 0;
     const hits = String(row.hit_count).padEnd(4);
     const created = row.created_at.toISOString().slice(0, 10);
     const content = row.content.length > 80 ? row.content.slice(0, 79) + '…' : row.content;
-    console.log(`${id}  ${ver.padEnd(4)} ${hits}  ${created}  ${content}`);
+    console.log(`${id}  ${String(authorCount).padEnd(7)}  ${hits}  ${created}  ${content}`);
   }
 }
 

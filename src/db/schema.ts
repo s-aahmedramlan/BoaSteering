@@ -35,6 +35,7 @@ export const facts = pgTable('facts', {
   hit_count: integer('hit_count').notNull().default(0),
   last_hit_at: timestamp('last_hit_at'),
   verified: boolean('verified').notNull().default(false),
+  authors: text('authors').array().notNull().default(sql`'{}'::text[]`),
 });
 
 export type Fact = typeof facts.$inferSelect;

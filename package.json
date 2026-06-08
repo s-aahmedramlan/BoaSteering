@@ -10,22 +10,27 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "ingest": "ts-node src/cli/ingest-runner.ts",
-    "boa": "ts-node src/cli/manage-runner.ts"
+    "boa": "ts-node src/cli/manage-runner.ts",
+    "mcp": "ts-node src/mcp.ts",
+    "promote": "ts-node src/cli/promote-runner.ts",
+    "install-hooks": "ts-node --project tsconfig.scripts.json scripts/install-hooks.ts",
+    "post-merge": "ts-node --project tsconfig.scripts.json scripts/post-merge.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.29.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "dotenv": "^16.4.0",
     "drizzle-orm": "^0.36.0",
     "express": "^4.18.0",
     "openai": "^4.70.0",
-    "pg": "^8.13.0",
-    "dotenv": "^16.4.0"
+    "pg": "^8.13.0"
   },
   "devDependencies": {
     "@types/express": "^4.17.0",
     "@types/node": "^22.0.0",
     "@types/pg": "^8.11.0",
     "drizzle-kit": "^0.28.0",
-    "typescript": "^5.0.0",
-    "ts-node": "^10.9.0"
+    "ts-node": "^10.9.0",
+    "typescript": "^5.0.0"
   }
 }

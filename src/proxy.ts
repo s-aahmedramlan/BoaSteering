@@ -1,8 +1,9 @@
 import express, { Request, Response, NextFunction } from 'express';
-import { extractFacts } from './extractor';
+import { extractFacts, extractFactsFromTranscript } from './extractor';
 import { storeFact } from './dedup';
 import { retrieveAndInject, extractFilePaths } from './retriever';
 import { detectRepo } from './repo';
+import { createDashboardRouter } from './dashboard';
 
 const ANTHROPIC_API_BASE = 'https://api.anthropic.com';
 
@@ -39,11 +40,43 @@ export function createProxy(): express.Application {
   app.use(express.raw({ type: '*/*', limit: '10mb' }));
 
   app.post('/v1/messages', handleMessages);
+  app.post('/ingest/conversation', handleIngestConversation);
+  app.use(createDashboardRouter());
 
   // Pass-through for everything else
   app.all('*', passthroughProxy);
 
   return app;
+}
+
+// ── /ingest/conversation ──────────────────────────────────────────────────────
+
+async function handleIngestConversation(req: Request, res: Response): Promise<void> {
+  let stored = 0;
+  let skipped = 0;
+  try {
+    const body = req.body as { text?: string; source?: string; repo?: string };
+    const text = typeof body.text === 'string' ? body.text : '';
+    const author = typeof body.source === 'string' && body.source ? body.source : 'claude.ai';
+    const repo = typeof body.repo === 'string' && body.repo
+      ? body.repo
+      : await detectRepo().catch(() => '');
+
+    if (text) {
+      const facts = await extractFactsFromTranscript(text).catch(() => [] as string[]);
+      for (const fact of facts) {
+        try {
+          await storeFact({ content: fact, filePaths: [], author, repo });
+          stored++;
+        } catch {
+          skipped++;
+        }
+      }
+    }
+  } catch (err) {
+    console.error('[boa:ingest] unexpected error:', err);
+  }
+  res.status(200).json({ stored, skipped });
 }
 
 // ── /v1/messages ─────────────────────────────────────────────────────────────
@@ -55,13 +88,24 @@ async function handleMessages(req: Request, res: Response): Promise<void> {
   // Inject relevant facts into the system prompt before forwarding
   const modifiedBody = await injectFacts(body, req);
 
+  const serialized = JSON.stringify(modifiedBody);
+  const estimatedTokens = Math.round(serialized.length / 4);
+  const systemLen = typeof modifiedBody.system === 'string' ? modifiedBody.system.length : 0;
+  const messagesLen = JSON.stringify(modifiedBody.messages ?? []).length;
+  console.log(
+    `[boa:request] ~${estimatedTokens} tokens | system=${Math.round(systemLen / 4)}tok messages=${Math.round(messagesLen / 4)}tok | model=${modifiedBody.model ?? '?'}`,
+  );
+  if (estimatedTokens > 50000) {
+    console.warn(`[boa:request] WARNING: large request (${estimatedTokens} estimated tokens) — system prompt is ${systemLen} chars`);
+  }
+
   const upstreamHeaders = buildUpstreamHeaders(req);
 
   try {
     const upstream = await fetch(`${ANTHROPIC_API_BASE}/v1/messages`, {
       method: 'POST',
       headers: { ...upstreamHeaders, 'content-type': 'application/json' },
-      body: JSON.stringify(modifiedBody),
+      body: serialized,
     });
 
     forwardResponseHeaders(upstream, res);
@@ -94,7 +138,8 @@ async function handleJsonResponse(
   const responseText = await upstream.text();
   res.send(responseText);
 
-  // Async extraction — never block the response
+  if (upstream.status !== 200) return;
+
   setImmediate(() => {
     runExtractionPipeline(originalBody, responseText, req).catch((err) =>
       console.error('[boa:extractor] pipeline error:', err),
@@ -124,10 +169,11 @@ async function handleStreamingResponse(
   }
   res.end();
 
+  if (upstream.status !== 200) return;
+
   const fullText = chunks.join('');
   const assistantText = extractTextFromSSE(fullText);
 
-  // Async extraction
   setImmediate(() => {
     runExtractionPipelineFromText(originalBody, assistantText, req).catch((err) =>
       console.error('[boa:extractor] streaming pipeline error:', err),

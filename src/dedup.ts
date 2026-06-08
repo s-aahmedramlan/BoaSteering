@@ -17,8 +17,8 @@ export async function storeFact(candidate: StoreCandidateOptions): Promise<void>
   const hasFilePaths = candidate.filePaths.length > 0;
 
   // Query top matching fact by cosine similarity within the same repo
-  const result = await pool.query<{ id: string; content: string; similarity: number }>(
-    `SELECT id, content, 1 - (embedding <=> $1::vector) AS similarity
+  const result = await pool.query<{ id: string; content: string; authors: string[]; similarity: number }>(
+    `SELECT id, content, authors, 1 - (embedding <=> $1::vector) AS similarity
      FROM facts
      WHERE repo = $2
        ${hasFilePaths ? 'AND file_paths && $3::text[]' : ''}
@@ -33,7 +33,24 @@ export async function storeFact(candidate: StoreCandidateOptions): Promise<void>
 
   if (top) {
     if (top.similarity > 0.92) {
-      // Already know this — discard silently
+      const existingAuthors: string[] = Array.isArray(top.authors) ? top.authors : [];
+      if (existingAuthors.includes(candidate.author)) {
+        // Same author, true duplicate — discard silently
+        return;
+      }
+      // Different author — cross-dev convergence, append author
+      try {
+        const updated = await pool.query<{ authors: string[] }>(
+          `UPDATE facts SET authors = array_append(authors, $1) WHERE id = $2 RETURNING authors`,
+          [candidate.author, top.id],
+        );
+        const updatedAuthors: string[] = updated.rows[0]?.authors ?? existingAuthors;
+        console.log(
+          `[boa:dedup] cross-dev convergence: "${top.content}" now seen by ${updatedAuthors.length} author(s)`,
+        );
+      } catch {
+        // fail silently
+      }
       return;
     }
 
@@ -50,8 +67,8 @@ export async function storeFact(candidate: StoreCandidateOptions): Promise<void>
 
   // Store the new fact
   await pool.query(
-    `INSERT INTO facts (content, embedding, file_paths, author, repo, verified)
-     VALUES ($1, $2::vector, $3::text[], $4, $5, $6)`,
+    `INSERT INTO facts (content, embedding, file_paths, author, repo, verified, authors)
+     VALUES ($1, $2::vector, $3::text[], $4, $5, $6, ARRAY[$4])`,
     [
       candidate.content,
       `[${embedding.join(',')}]`,

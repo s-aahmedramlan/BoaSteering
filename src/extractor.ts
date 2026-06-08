@@ -2,6 +2,8 @@ import Anthropic from '@anthropic-ai/sdk';
 
 const SYSTEM_PROMPT = `You are an expert at identifying org-specific institutional knowledge from developer-agent conversations. Your job is to extract atomic facts — single, specific pieces of information that a coding agent would otherwise get wrong because they are specific to this team or codebase. Examples: 'This team uses gRPC not REST for internal service calls', 'The auth service returns 403 not 401 for expired tokens', 'Always use the internal retry utility at utils/retry.ts instead of raw fetch'. Return ONLY a JSON array of atomic fact strings, or an empty array if none found. No explanation, no markdown, just the JSON array.`;
 
+const MAX_TRANSCRIPT_CHARS = 12000;
+
 export interface Exchange {
   system?: string;
   messages: Array<{ role: string; content: unknown }>;
@@ -9,7 +11,7 @@ export interface Exchange {
 }
 
 export async function extractFacts(exchange: Exchange): Promise<string[]> {
-  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, baseURL: 'https://api.anthropic.com' });
 
   const conversationSummary = buildConversationSummary(exchange);
 
@@ -31,11 +33,47 @@ export async function extractFacts(exchange: Exchange): Promise<string[]> {
       .map((block) => (block as { type: 'text'; text: string }).text)
       .join('');
 
-    const parsed = JSON.parse(stripMarkdownJson(text));
+    const cleaned = stripMarkdownJson(text);
+    if (!cleaned.startsWith('[')) return [];
+    const parsed = JSON.parse(cleaned);
     if (!Array.isArray(parsed)) return [];
     return parsed.filter((item): item is string => typeof item === 'string');
-  } catch (err) {
-    console.error('[boa:extractor] failed to extract facts:', err);
+  } catch {
+    return [];
+  }
+}
+
+export async function extractFactsFromTranscript(text: string): Promise<string[]> {
+  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, baseURL: 'https://api.anthropic.com' });
+
+  const truncated = text.length > MAX_TRANSCRIPT_CHARS
+    ? text.slice(text.length - MAX_TRANSCRIPT_CHARS)
+    : text;
+
+  try {
+    const response = await client.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 1024,
+      system: SYSTEM_PROMPT,
+      messages: [
+        {
+          role: 'user',
+          content: truncated,
+        },
+      ],
+    });
+
+    const responseText = response.content
+      .filter((block) => block.type === 'text')
+      .map((block) => (block as { type: 'text'; text: string }).text)
+      .join('');
+
+    const cleaned = stripMarkdownJson(responseText);
+    if (!cleaned.startsWith('[')) return [];
+    const parsed = JSON.parse(cleaned);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((item): item is string => typeof item === 'string');
+  } catch {
     return [];
   }
 }
