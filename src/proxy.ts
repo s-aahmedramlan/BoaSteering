@@ -2,6 +2,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import { extractFacts } from './extractor';
 import { storeFact } from './dedup';
 import { retrieveAndInject, extractFilePaths } from './retriever';
+import { detectRepo } from './repo';
 
 const ANTHROPIC_API_BASE = 'https://api.anthropic.com';
 
@@ -156,7 +157,7 @@ async function injectFacts(
       .map((m) => (typeof m.content === 'string' ? m.content : JSON.stringify(m.content)))
       .join('\n');
 
-    const repo = extractRepoFromRequest(req);
+    const repo = await extractRepoFromRequest(req);
     const injectedSystem = await retrieveAndInject({
       systemPrompt,
       repo,
@@ -214,7 +215,7 @@ async function runExtractionPipelineFromText(
   const facts = await extractFacts({ system, messages, assistantResponse: assistantText });
   if (facts.length === 0) return;
 
-  const repo = extractRepoFromRequest(req);
+  const repo = await extractRepoFromRequest(req);
   const author = (req.headers['x-boa-author'] as string | undefined) ?? '';
   const allText = system + ' ' + messages.map((m) => JSON.stringify(m.content)).join(' ');
   const filePaths = extractFilePaths(allText);
@@ -279,8 +280,10 @@ function forwardResponseHeaders(upstream: globalThis.Response, res: Response): v
   }
 }
 
-function extractRepoFromRequest(req: Request): string {
-  return (req.headers['x-boa-repo'] as string | undefined) ?? '';
+async function extractRepoFromRequest(req: Request): Promise<string> {
+  const header = req.headers['x-boa-repo'] as string | undefined;
+  if (header) return header;
+  return detectRepo();
 }
 
 function extractTextFromSSE(sse: string): string {

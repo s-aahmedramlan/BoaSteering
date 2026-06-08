@@ -6,6 +6,7 @@ export interface StoreCandidateOptions {
   filePaths: string[];
   author: string;
   repo: string;
+  verified?: boolean;
 }
 
 export async function storeFact(candidate: StoreCandidateOptions): Promise<void> {
@@ -49,14 +50,15 @@ export async function storeFact(candidate: StoreCandidateOptions): Promise<void>
 
   // Store the new fact
   await pool.query(
-    `INSERT INTO facts (content, embedding, file_paths, author, repo)
-     VALUES ($1, $2::vector, $3::text[], $4, $5)`,
+    `INSERT INTO facts (content, embedding, file_paths, author, repo, verified)
+     VALUES ($1, $2::vector, $3::text[], $4, $5, $6)`,
     [
       candidate.content,
       `[${embedding.join(',')}]`,
       pgFilePaths,
       candidate.author,
       candidate.repo,
+      candidate.verified ?? false,
     ],
   );
 }

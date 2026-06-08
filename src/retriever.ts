@@ -1,12 +1,8 @@
 import { getPool } from './db';
-import { getEmbedding } from './embeddings';
 
 const MAX_FACTS = 5;
 const MAX_FACTS_FALLBACK = 3;
-const SIMILARITY_THRESHOLD = 0.80;
 const MAX_INJECTED_TOKENS = 300;
-
-// Rough token estimate: ~4 chars per token
 const CHARS_PER_TOKEN = 4;
 
 export interface RetrievalContext {
@@ -18,7 +14,6 @@ export interface RetrievalContext {
 export interface RetrievedFact {
   id: string;
   content: string;
-  similarity: number;
 }
 
 export async function retrieveAndInject(ctx: RetrievalContext): Promise<string> {
@@ -30,7 +25,7 @@ export async function retrieveAndInject(ctx: RetrievalContext): Promise<string> 
 
   let facts: RetrievedFact[] = [];
   try {
-    facts = await retrieveFacts(ctx.requestText, filePaths, ctx.repo);
+    facts = await retrieveFacts(filePaths, ctx.repo);
   } catch (err) {
     console.error('[boa:retriever] failed to retrieve facts:', err);
     return ctx.systemPrompt;
@@ -44,49 +39,36 @@ export async function retrieveAndInject(ctx: RetrievalContext): Promise<string> 
   return injectedBlock + '\n\n' + ctx.systemPrompt;
 }
 
-async function retrieveFacts(
-  queryText: string,
-  filePaths: string[],
-  repo: string,
-): Promise<RetrievedFact[]> {
+async function retrieveFacts(filePaths: string[], repo: string): Promise<RetrievedFact[]> {
   const pool = getPool();
-  const embedding = await getEmbedding(queryText);
-  const pgVector = `[${embedding.join(',')}]`;
   const hasFilePaths = filePaths.length > 0;
   const pgFilePaths = `{${filePaths.map((p) => `"${p.replace(/"/g, '\\"')}"`).join(',')}}`;
 
-  const result = await pool.query<{ id: string; content: string; similarity: number }>(
-    `SELECT id, content, 1 - (embedding <=> $1::vector) AS similarity
+  const params: unknown[] = [];
+  const conditions: string[] = [];
+
+  if (repo) {
+    params.push(repo);
+    conditions.push(`repo = $${params.length}`);
+  }
+  if (hasFilePaths) {
+    params.push(pgFilePaths);
+    conditions.push(`file_paths && $${params.length}::text[]`);
+  }
+
+  params.push(MAX_FACTS);
+  const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+  const result = await pool.query<{ id: string; content: string }>(
+    `SELECT id, content
      FROM facts
-     WHERE ${repo ? 'repo = $2 AND' : ''}
-           ${hasFilePaths ? `file_paths && $${repo ? 3 : 2}::text[] AND` : ''}
-           1 - (embedding <=> $1::vector) > ${SIMILARITY_THRESHOLD}
-     ORDER BY embedding <=> $1::vector
-     LIMIT $${buildParamIndex(repo, hasFilePaths)}`,
-    buildQueryParams(pgVector, repo, hasFilePaths ? pgFilePaths : null, MAX_FACTS * 2),
+     ${where}
+     ORDER BY verified DESC, hit_count DESC, created_at DESC
+     LIMIT $${params.length}`,
+    params,
   );
 
-  return result.rows.slice(0, MAX_FACTS);
-}
-
-function buildParamIndex(repo: string, hasFilePaths: boolean): number {
-  let idx = 1; // $1 = vector
-  if (repo) idx++;
-  if (hasFilePaths) idx++;
-  return idx + 1;
-}
-
-function buildQueryParams(
-  pgVector: string,
-  repo: string,
-  pgFilePaths: string | null,
-  limit: number,
-): unknown[] {
-  const params: unknown[] = [pgVector];
-  if (repo) params.push(repo);
-  if (pgFilePaths) params.push(pgFilePaths);
-  params.push(limit);
-  return params;
+  return result.rows;
 }
 
 function buildInjectedBlock(facts: RetrievedFact[]): string {
@@ -119,14 +101,10 @@ async function incrementHitCounts(ids: string[]): Promise<void> {
 
 export function extractFilePaths(text: string): string[] {
   const patterns = [
-    // ESM/CJS imports: from './foo/bar' or require('./foo/bar')
     /(?:from|require)\s*\(\s*['"]([^'"]+)['"]\s*\)/g,
     /(?:from)\s+['"]([^'"]+)['"]/g,
-    // Absolute-ish paths that look like source files
     /\b((?:src|lib|app|packages?|services?|components?|utils?|api|internal)\/[^\s"'`>,)]+\.[a-zA-Z0-9]+)/g,
-    // Relative paths
     /\b(\.[./][^\s"'`>,)]+\.[a-zA-Z0-9]+)/g,
-    // Tool result paths like <path>src/foo.ts</path> or "path": "src/foo.ts"
     /<path>([^<]+)<\/path>/g,
     /"path"\s*:\s*"([^"]+)"/g,
   ];
