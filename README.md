@@ -1,123 +1,190 @@
 # Boa
 
-An HTTP proxy that sits in front of the Anthropic API. It captures org-specific facts from developer-agent conversations, stores them in a vector database, and injects relevant facts into future requests — zero manual work required.
+Boa is an HTTP proxy that sits in front of the Anthropic API. It captures org-specific facts from developer-agent conversations, stores them in Postgres, and injects relevant facts into future requests — automatically, with no manual work.
+
+The core insight: when a developer corrects their AI coding agent, that correction should stick. And when three developers independently hit the same wall, it should become a team convention.
+
+```
+developer tool  →  Boa (localhost:3333)  →  Anthropic API
+                         ↕
+                   Postgres + pgvector
+                         ↕
+               CLAUDE.{author}.md  /  CLAUDE.md
+```
+
+## The problem
+
+A developer corrects their agent: *"don't use fetch here, use axios — our network proxy blocks it."* The agent gets it right for the rest of the session. Next session, it makes the same mistake. The developer's teammates have the same experience independently.
+
+Boa solves both: personal corrections persist immediately. Team-wide patterns surface automatically when enough developers hit the same thing.
 
 ## How it works
 
-```
-your tool  →  Boa proxy (localhost:3333)  →  Anthropic API
-                    ↕
-              Postgres + pgvector
+**Capture** (every session, automatic)
+1. Request arrives at Boa's proxy
+2. Boa retrieves relevant stored facts (by repo + file paths) and prepends them to the system prompt
+3. Request is forwarded to Anthropic unchanged (aside from injected facts)
+4. After the response returns, Boa asynchronously sends the exchange to a fast LLM to extract any org-specific facts
+5. Extracted facts are deduplicated via cosine similarity and stored in Postgres
+
+**Promotion** (automatic, no human required)
+
+| Event | What happens |
+|---|---|
+| New fact stored for any author | Written to `CLAUDE.{author}.md` immediately |
+| Same fact captured by 3 different authors | Written to shared `CLAUDE.md` automatically |
+| `npm run promote` | Manual promotion with Haiku filter (optional) |
+
+**Retrieval** (every request, automatic)
+- Boa runs two queries per request: facts from the current developer's history, plus facts promoted by other developers in the same repo and file scope
+- Both sets are merged, deduplicated, and injected into the system prompt (capped at ~300 tokens)
+- A developer joining a repo for the first time immediately inherits what their teammates already learned
+
+## Setup
+
+**Prerequisites**
+- Node.js 18+
+- PostgreSQL with [pgvector](https://github.com/pgvector/pgvector) (or [Neon](https://neon.tech) — pgvector is built in)
+
+**Install**
+
+```bash
+npm install
+cp .env.example .env
+# set ANTHROPIC_API_KEY, OPENAI_API_KEY, DATABASE_URL
 ```
 
-1. Every request to `/v1/messages` is forwarded to Anthropic unchanged (except for injected facts).
-2. After the response is returned to the client, Boa asynchronously extracts atomic facts using a fast LLM call.
-3. Extracted facts are deduplicated via cosine similarity and stored in Postgres.
-4. On subsequent requests, Boa retrieves relevant facts (by file path + semantic similarity) and prepends them to the system prompt — capped at 300 tokens.
+**Run**
 
-## One-line setup
+```bash
+npm run dev
+```
+
+Boa creates the `facts` table and HNSW index on startup — no migration step needed.
+
+**Point your tool at Boa**
 
 ```bash
 ANTHROPIC_BASE_URL=http://localhost:3333
 ```
 
-That's the only change your tool needs. Everything else is invisible.
+Set this before launching Claude Code (or any Anthropic SDK client) and all traffic routes through Boa automatically. To make it permanent:
 
-## Prerequisites
-
-- Node.js 18+
-- PostgreSQL with the [pgvector](https://github.com/pgvector/pgvector) extension
-
-## Installation
-
-```bash
-npm install
-cp .env.example .env
-# fill in ANTHROPIC_API_KEY, OPENAI_API_KEY, DATABASE_URL
+```powershell
+[System.Environment]::SetEnvironmentVariable("ANTHROPIC_BASE_URL", "http://localhost:3333", "User")
 ```
-
-## Running
-
-```bash
-# development (ts-node, auto-restarts not included)
-npm run dev
-
-# production
-npm run build
-npm start
-```
-
-On startup, Boa creates the `facts` table and HNSW index automatically — no separate migration step needed.
 
 ## Environment variables
 
-| Variable | Required | Default | Description |
-|---|---|---|---|
-| `ANTHROPIC_API_KEY` | yes | — | Forwarded to the Anthropic API |
-| `OPENAI_API_KEY` | yes | — | Used for `text-embedding-3-small` embeddings |
-| `DATABASE_URL` | yes | — | Postgres connection string |
-| `PORT` | no | `3333` | Port the proxy listens on |
+| Variable | Required | Description |
+|---|---|---|
+| `ANTHROPIC_API_KEY` | yes | Forwarded to Anthropic; also used for fact extraction |
+| `OPENAI_API_KEY` | yes | Used for `text-embedding-3-small` embeddings at storage time |
+| `DATABASE_URL` | yes | Postgres connection string |
+| `PORT` | no (default `3333`) | Port the proxy listens on |
+| `PROMOTE_THRESHOLD` | no (default `2`) | Minimum author count for `npm run promote` |
 
-## Optional request headers
+## Request headers
 
-Tools can pass these headers to enrich stored facts:
+Pass these from your tool to enrich stored facts:
 
 | Header | Description |
 |---|---|
-| `x-boa-repo` | Repository identifier (e.g. `acme/backend`). Facts are scoped per repo. |
-| `x-boa-author` | Developer identifier, stored for auditability. |
+| `x-boa-repo` | Repository identifier (e.g. `acme/api`). Facts are scoped per repo. |
+| `x-boa-author` | Developer identifier. Used for personal `.md` files and cross-dev inheritance. |
 
-## Fact lifecycle
+## Manager dashboard
 
-- **Captured** — LLM detects an org-specific correction or constraint in the conversation.
-- **Deduplicated** — cosine similarity > 0.92 with an existing fact → discarded.
-- **Conflict-flagged** — similarity between 0.75–0.92 → logged to console, discarded.
-- **Injected** — top-5 facts (similarity > 0.80, overlapping file paths) prepended to system prompt.
-- **Stale** — not hit in 30 days, or frequently hit but not recently → flagged in logs.
-- **Verified** — mark facts as `verified = true` via a git hook on merge to signal team consensus.
+Open `http://localhost:3333/dashboard` in a browser while Boa is running.
 
-## Staleness check
+Shows all facts that have reached the 2-author convergence threshold but haven't been promoted yet. The manager can promote or dismiss each fact with one click — no CLI, no SQL.
 
-Call `flagStaleFacts()` from `src/staleness.ts` on a cron or git hook:
+## CLI commands
 
-```typescript
-import { flagStaleFacts } from './src/staleness';
-await flagStaleFacts(); // logs stale facts to console
+```bash
+# List all stored facts
+npm run boa list
+
+# Manually promote converged facts to CLAUDE.md (with Haiku filter)
+npm run promote
+
+# Promote to ~/.claude/CLAUDE.md (global, applies across all repos)
+npm run promote -- --global
+
+# Mark a fact as verified
+npm run boa verify <id>
+
+# Delete a fact
+npm run boa delete <id>
 ```
+
+## MCP server
+
+Boa ships an MCP server that gives Claude a `save_fact` tool — so the agent can proactively capture facts mid-session without waiting for the extraction pipeline.
+
+```bash
+# Register with Claude Code (run once)
+claude mcp add boa -- npx ts-node C:\path\to\boa\src\mcp.ts
+```
+
+Once registered, Claude will call `save_fact` when it learns something org-specific.
+
+## Git hook
+
+The post-merge hook marks facts as `verified = true` when the files they're associated with appear in a merge:
+
+```bash
+npm run install-hooks
+```
+
+Verified facts are ranked higher in retrieval.
 
 ## Browser extension (Claude.ai)
 
-A lightweight Chrome extension lives in the `extension/` folder. It scrapes conversations from `claude.ai` and sends them to Boa so facts are captured even when you are chatting interactively rather than through a tool.
+A Chrome extension in `extension/` captures conversations from `claude.ai` and sends them to Boa's `/ingest/conversation` endpoint, so facts are captured from interactive sessions too.
 
-### Loading the extension
+1. Open `chrome://extensions`
+2. Enable **Developer mode**
+3. Click **Load unpacked** → select the `extension/` folder
+4. Make sure Boa is running on port 3333
 
-1. Open `chrome://extensions` in Chrome.
-2. Enable **Developer mode** (toggle in the top-right corner).
-3. Click **Load unpacked** and select the `extension/` folder from this repository.
-
-### Usage
-
-- Make sure Boa is running on port 3333 (`npm run dev` or `npm start`).
-- Navigate to any conversation on `https://claude.ai`.
-- The extension auto-syncs every **5 minutes** whenever the conversation changes.
-- Click the **Boa** toolbar icon and press **Sync now** to trigger an immediate sync.
-- The popup shows how many new facts were stored, or tells you if Boa is not running.
-
-The extension never alerts or throws errors — if Boa is offline the sync is silently skipped and retried on the next interval.
+Auto-syncs every 5 minutes. Click the **Boa** toolbar icon to sync immediately.
 
 ## Database schema
 
 ```sql
 facts (
-  id          UUID PRIMARY KEY,
-  content     TEXT,           -- the atomic fact, one sentence
-  embedding   vector(1536),   -- text-embedding-3-small
-  file_paths  TEXT[],         -- files in scope when captured
-  author      TEXT,
-  repo        TEXT,
-  created_at  TIMESTAMP,
-  hit_count   INTEGER,        -- incremented on every injection
-  last_hit_at TIMESTAMP,
-  verified    BOOLEAN         -- true after PR merge sync
+  id           UUID PRIMARY KEY,
+  content      TEXT,           -- atomic fact, one sentence
+  embedding    vector(1536),   -- text-embedding-3-small, used for dedup only
+  file_paths   TEXT[],         -- files in scope when captured
+  author       TEXT,           -- developer who captured it
+  authors      TEXT[],         -- all developers who independently captured it
+  repo         TEXT,
+  created_at   TIMESTAMP,
+  hit_count    INTEGER,        -- incremented on every injection
+  last_hit_at  TIMESTAMP,
+  verified     BOOLEAN,        -- true after git post-merge hook
+  dismissed    BOOLEAN,        -- true if manager dismissed from dashboard
+  promoted_at  TIMESTAMP,      -- when fact was written to a .md file
+  promoted_to  TEXT            -- path of the .md file, or 'personal'
 )
 ```
+
+**Deduplication thresholds**
+
+| Cosine similarity | Action |
+|---|---|
+| > 0.92, same author | Discard silently (true duplicate) |
+| > 0.92, different author | Merge — append to `authors[]` |
+| 0.75 – 0.92 | Log conflict warning, discard |
+| < 0.75 | Store as new fact |
+
+## Testing
+
+```bash
+# Simulate cross-dev convergence, personal .md promotion, and repo inheritance
+node test-flows.js
+```
+
+Requires Boa running on port 3333. Cleans up its test data before each run.
