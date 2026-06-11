@@ -204,10 +204,12 @@ async function injectFacts(
       .join('\n');
 
     const repo = await extractRepoFromRequest(req);
+    const author = (req.headers['x-boa-author'] as string | undefined) ?? '';
     const injectedSystem = await retrieveAndInject({
       systemPrompt,
       repo,
       requestText: lastUserContent,
+      author,
     });
 
     if (injectedSystem === systemPrompt) return body;

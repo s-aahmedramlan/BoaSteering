@@ -11,6 +11,7 @@ export interface RetrievalContext {
   systemPrompt: string;
   repo: string;
   requestText: string;
+  author?: string;
 }
 
 export interface RetrievedFact {
@@ -27,7 +28,7 @@ export async function retrieveAndInject(ctx: RetrievalContext): Promise<string> 
 
   let facts: RetrievedFact[] = [];
   try {
-    facts = await retrieveFacts(filePaths, ctx.repo);
+    facts = await retrieveFacts(filePaths, ctx.repo, ctx.author);
   } catch (err) {
     console.error('[boa:retriever] failed to retrieve facts:', err);
     return ctx.systemPrompt;
@@ -45,7 +46,7 @@ export async function retrieveAndInject(ctx: RetrievalContext): Promise<string> 
   return SAVE_FACT_INSTRUCTION + '\n\n' + injectedBlock + '\n\n' + ctx.systemPrompt;
 }
 
-async function retrieveFacts(filePaths: string[], repo: string): Promise<RetrievedFact[]> {
+async function retrieveFacts(filePaths: string[], repo: string, author?: string): Promise<RetrievedFact[]> {
   const pool = getPool();
   const hasFilePaths = filePaths.length > 0;
   const pgFilePaths = `{${filePaths.map((p) => `"${p.replace(/"/g, '\\"')}"`).join(',')}}`;
@@ -65,7 +66,7 @@ async function retrieveFacts(filePaths: string[], repo: string): Promise<Retriev
   params.push(MAX_FACTS);
   const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
-  const result = await pool.query<{ id: string; content: string }>(
+  const { rows: ownFacts } = await pool.query<{ id: string; content: string }>(
     `SELECT id, content
      FROM facts
      ${where}
@@ -74,7 +75,33 @@ async function retrieveFacts(filePaths: string[], repo: string): Promise<Retriev
     params,
   );
 
-  return result.rows;
+  // Cross-dev inheritance: facts promoted by other authors in the same repo/file scope
+  let otherFacts: Array<{ id: string; content: string }> = [];
+  if (repo && hasFilePaths && author) {
+    const { rows } = await pool.query<{ id: string; content: string }>(
+      `SELECT id, content FROM facts
+       WHERE repo = $1
+         AND file_paths && $2::text[]
+         AND promoted_at IS NOT NULL
+         AND author != $3
+       ORDER BY hit_count DESC
+       LIMIT $4`,
+      [repo, pgFilePaths, author, MAX_FACTS],
+    );
+    otherFacts = rows;
+  }
+
+  // Merge, deduplicate by content
+  const seen = new Set<string>();
+  const merged: RetrievedFact[] = [];
+  for (const f of [...ownFacts, ...otherFacts]) {
+    if (!seen.has(f.content)) {
+      seen.add(f.content);
+      merged.push(f);
+    }
+  }
+
+  return merged;
 }
 
 function buildInjectedBlock(facts: RetrievedFact[]): string {
@@ -98,9 +125,7 @@ async function incrementHitCounts(ids: string[]): Promise<void> {
   if (ids.length === 0) return;
   const pool = getPool();
   await pool.query(
-    `UPDATE facts
-     SET hit_count = hit_count + 1, last_hit_at = now()
-     WHERE id = ANY($1::uuid[])`,
+    `UPDATE facts SET hit_count = hit_count + 1, last_hit_at = now() WHERE id = ANY($1::uuid[])`,
     [ids],
   );
 }

@@ -1,5 +1,7 @@
+import * as path from 'path';
 import { getPool } from './db';
 import { getEmbedding } from './embeddings';
+import { appendFactToFile, computeClaudeMdPath } from './cli/promote';
 
 export interface StoreCandidateOptions {
   content: string;
@@ -40,16 +42,29 @@ export async function storeFact(candidate: StoreCandidateOptions): Promise<void>
       }
       // Different author — cross-dev convergence, append author
       try {
-        const updated = await pool.query<{ authors: string[] }>(
-          `UPDATE facts SET authors = array_append(authors, $1) WHERE id = $2 RETURNING authors`,
+        const updated = await pool.query<{ authors: string[]; content: string; file_paths: string[] }>(
+          `UPDATE facts SET authors = array_append(authors, $1) WHERE id = $2 RETURNING authors, content, file_paths`,
           [candidate.author, top.id],
         );
-        const updatedAuthors: string[] = updated.rows[0]?.authors ?? existingAuthors;
+        const updatedRow = updated.rows[0];
+        const updatedAuthors: string[] = updatedRow?.authors ?? existingAuthors;
         console.log(
           `[boa:dedup] cross-dev convergence: "${top.content}" now seen by ${updatedAuthors.length} author(s)`,
         );
-      } catch {
-        // fail silently
+
+        // Auto-promote to shared CLAUDE.md when 3 devs have independently hit the same fact
+        if (updatedAuthors.length >= 3 && updatedRow) {
+          const filePaths: string[] = Array.isArray(updatedRow.file_paths) ? updatedRow.file_paths : [];
+          const claudeMdPath = computeClaudeMdPath(filePaths, process.cwd(), false);
+          appendFactToFile(claudeMdPath, updatedRow.content);
+          await pool.query(
+            `UPDATE facts SET promoted_at = now(), promoted_to = $1 WHERE id = $2 AND promoted_at IS NULL`,
+            [claudeMdPath, top.id],
+          );
+          console.log(`[boa:auto-promote] shared → ${claudeMdPath}: "${updatedRow.content}"`);
+        }
+      } catch (err) {
+        console.error('[boa:auto-promote] convergence promotion failed:', err);
       }
       return;
     }
@@ -78,4 +93,16 @@ export async function storeFact(candidate: StoreCandidateOptions): Promise<void>
       candidate.verified ?? false,
     ],
   );
+
+  // Immediately write to personal CLAUDE.{author}.md — one correction is enough to persist it
+  if (candidate.author) {
+    try {
+      const safeName = candidate.author.replace(/[^a-zA-Z0-9_-]/g, '-');
+      const claudeMdPath = path.join(process.cwd(), `CLAUDE.${safeName}.md`);
+      appendFactToFile(claudeMdPath, candidate.content);
+      console.log(`[boa:auto-promote] personal → CLAUDE.${safeName}.md: "${candidate.content}"`);
+    } catch (err) {
+      console.error('[boa:auto-promote] personal promotion failed:', err);
+    }
+  }
 }
