@@ -184,7 +184,7 @@ function ProblemSection() {
   const stats = [
     { value: 'HOURS', subtext: 'Spent searching for diagnostic answers' },
     { value: '10+', subtext: 'Systems storing fragmented knowledge' },
-    { value: '10x', subtext: 'Faster diagnosis with unified context' },
+    { value: '72%', subtext: 'Of expertise lost on technician turnover' },
   ]
 
   return (
