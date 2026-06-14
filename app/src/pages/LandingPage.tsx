@@ -1,11 +1,10 @@
 import { useRef, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { motion, useInView, AnimatePresence } from 'framer-motion'
-import { CheckCircle, Link2, RefreshCw, Shield, Stethoscope, Crosshair, Sun, Moon, AlertCircle, Package, Truck, ArrowRight } from 'lucide-react'
+import { CheckCircle, Link2, RefreshCw, Shield, Stethoscope, Crosshair, AlertCircle, Package, Truck, ArrowRight } from 'lucide-react'
 import ParticleField from '../sections/landing/ParticleField'
 import TypeTransition from '../sections/landing/TypeTransition'
 import PixelReveal from '../sections/landing/PixelReveal'
-import { useTheme } from '@/hooks/useTheme'
 
 function FadeInSection({ children, className = '', delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
   const ref = useRef(null)
@@ -26,7 +25,6 @@ function FadeInSection({ children, className = '', delay = 0 }: { children: Reac
 /* ─── NAV ─── */
 function LandingNav() {
   const navigate = useNavigate()
-  const { theme, toggle } = useTheme()
   const [scrolled, setScrolled] = useState(false)
 
   useEffect(() => {
@@ -71,21 +69,6 @@ function LandingNav() {
           ))}
         </nav>
 
-        <div className="flex items-center gap-px">
-          {/* Theme toggle */}
-          <button
-            onClick={toggle}
-            className="w-9 h-9 flex items-center justify-center transition-colors border"
-            style={{
-              color: scrolled ? 'var(--text-muted)' : 'rgba(255,255,255,0.75)',
-              borderColor: scrolled ? 'var(--border-default)' : 'rgba(255,255,255,0.25)',
-              borderRadius: 0,
-            }}
-            title={theme === 'light' ? 'Dark mode' : 'Light mode'}
-          >
-            {theme === 'light' ? <Moon size={14} strokeWidth={2} /> : <Sun size={14} strokeWidth={2} />}
-          </button>
-        </div>
       </div>
     </motion.header>
   )
