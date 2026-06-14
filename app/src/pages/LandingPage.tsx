@@ -435,7 +435,7 @@ function SearchDiagnosticsSection() {
             Ask about your devices in plain English.
           </h2>
           <p className="mt-5 font-mono-ui text-[13px] text-[var(--text-secondary)] leading-relaxed max-w-[55ch] tracking-wide">
-            "Why did this pump fail last month?" "What's the history of this error code?" "Which units have this issue?" Ask your diagnostics in natural language. Boa searches your institutional knowledge and returns answers instantly.
+            Ask your diagnostics in natural language. Boa searches your institutional knowledge and returns answers instantly.
           </p>
         </FadeInSection>
         <div className="bg-[var(--border-default)] p-px">
