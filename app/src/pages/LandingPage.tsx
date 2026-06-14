@@ -150,8 +150,8 @@ function HeroSection() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.9 }}
-          className="mt-6 font-mono-ui text-[13px] tracking-widest max-w-2xl mx-auto leading-relaxed"
-          style={{ color: 'rgba(255,255,255,0.72)' }}
+          className="mt-6 font-mono-ui text-[15px] tracking-widest max-w-2xl mx-auto leading-relaxed font-semibold"
+          style={{ color: 'rgba(255,255,255,0.95)' }}
         >
           Boa transforms your institutional knowledge into AI agents that know your devices as well as your best technician.
         </motion.p>
