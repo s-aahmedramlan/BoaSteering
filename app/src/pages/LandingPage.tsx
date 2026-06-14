@@ -143,7 +143,7 @@ function HeroSection() {
           className="font-display text-white max-w-3xl"
           style={{ fontSize: 'clamp(2.5rem, 6vw, 5rem)', lineHeight: 1.1 }}
         >
-          Diagnose hardware failures 5–10x faster.
+          Diagnose hardware failures 10x faster.
         </motion.h1>
 
         <motion.p
@@ -184,7 +184,7 @@ function ProblemSection() {
   const stats = [
     { value: 'HOURS', subtext: 'Spent searching for diagnostic answers' },
     { value: '10+', subtext: 'Systems storing fragmented knowledge' },
-    { value: '5-10x', subtext: 'Faster diagnosis with unified context' },
+    { value: '10x', subtext: 'Faster diagnosis with unified context' },
   ]
 
   return (
@@ -279,7 +279,7 @@ function WorkflowSection() {
             We don't just give you a tool. We build the workflow.
           </h2>
           <p className="mt-5 font-mono-ui text-[13px] text-[var(--text-secondary)] leading-relaxed max-w-[55ch] tracking-wide">
-            Boa designs and deploys the full diagnostic agentic workflow — tailored to how your team actually works. From ticket ingestion to diagnosis to resolution — end to end. Your technicians don't change how they work. They just work 5-10x faster.
+            Boa designs and deploys the full diagnostic agentic workflow — tailored to how your team actually works. From ticket ingestion to diagnosis to resolution — end to end. Your technicians don't change how they work. They just work 10x faster.
           </p>
         </FadeInSection>
       </div>
