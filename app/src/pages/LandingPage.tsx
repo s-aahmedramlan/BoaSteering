@@ -184,7 +184,7 @@ function ProblemSection() {
   const stats = [
     { value: 'HOURS', subtext: 'Spent searching for diagnostic answers' },
     { value: '10+', subtext: 'Systems storing fragmented knowledge' },
-    { value: 'HIGH MTTR', subtext: 'From fragmented knowledge and manual search' },
+    { value: 'HIGH MTTR', subtext: 'Technicians searching instead of solving' },
   ]
 
   return (
