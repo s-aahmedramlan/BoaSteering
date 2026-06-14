@@ -1,7 +1,7 @@
 import { useRef, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { motion, useInView, AnimatePresence } from 'framer-motion'
-import { CheckCircle, Link2, RefreshCw, Shield, Stethoscope, Crosshair, Sun, Moon } from 'lucide-react'
+import { CheckCircle, Link2, RefreshCw, Shield, Stethoscope, Crosshair, Sun, Moon, AlertCircle, Package, Truck, ArrowRight } from 'lucide-react'
 import ParticleField from '../sections/landing/ParticleField'
 import TypeTransition from '../sections/landing/TypeTransition'
 import PixelReveal from '../sections/landing/PixelReveal'
@@ -322,22 +322,28 @@ function PartsSection() {
       <div className="max-w-6xl mx-auto grid md:grid-cols-[45%_55%] gap-16 items-center">
         <div className="bg-[var(--border-default)] p-px">
           <div className="bg-[var(--surface)] p-8">
-            <div className="font-mono-ui text-[11px] text-[var(--text-muted)] tracking-widest uppercase mb-6 font-bold">Approval flow</div>
-            <div className="space-y-3">
-              <div className="bg-[var(--void)] p-4 border-l-2 border-[var(--red)]">
-                <div className="font-mono-ui text-[11px] text-[var(--text-muted)] uppercase tracking-widest mb-1">Diagnosis</div>
-                <div className="font-mono-ui text-[12px] text-[var(--text-primary)]">Bearing seal failure detected</div>
-              </div>
-              <div className="text-center text-[var(--text-muted)] font-mono-ui text-[11px]">↓</div>
-              <div className="bg-[var(--void)] p-4 border-l-2 border-[var(--red)]">
-                <div className="font-mono-ui text-[11px] text-[var(--text-muted)] uppercase tracking-widest mb-1">Parts</div>
-                <div className="font-mono-ui text-[12px] text-[var(--text-primary)]">Part #BSL-447 · Qty: 2 · OEM supplier</div>
-              </div>
-              <div className="text-center text-[var(--text-muted)] font-mono-ui text-[11px]">↓</div>
-              <div className="bg-[var(--void)] p-4 border-l-2 border-[var(--red)]">
-                <div className="font-mono-ui text-[11px] text-[var(--text-muted)] uppercase tracking-widest mb-1">Approve</div>
-                <div className="font-mono-ui text-[12px] text-[var(--text-primary)]">One click · no digging</div>
-              </div>
+            <div className="font-mono-ui text-[11px] text-[var(--text-muted)] tracking-widest uppercase mb-8 font-bold">Approval flow</div>
+            <div className="space-y-4">
+              {[
+                { icon: AlertCircle, label: 'Diagnosis', desc: 'Bearing seal failure detected', color: 'text-[var(--red)]' },
+                { icon: Package, label: 'Parts', desc: 'Part #BSL-447 · Qty: 2 · OEM supplier', color: 'text-[var(--red)]' },
+                { icon: CheckCircle, label: 'Approve', desc: 'One click · no digging', color: 'text-[var(--red)]' },
+              ].map((step, i) => (
+                <div key={i}>
+                  <div className="flex items-start gap-4 bg-gradient-to-r from-[var(--void)] to-transparent p-4 border border-[var(--border-default)]">
+                    <step.icon size={20} strokeWidth={2} className={`${step.color} flex-shrink-0 mt-1`} />
+                    <div className="flex-1">
+                      <div className="font-mono-ui text-[11px] text-[var(--text-muted)] uppercase tracking-widest mb-1 font-semibold">{step.label}</div>
+                      <div className="font-mono-ui text-[12px] text-[var(--text-primary)]">{step.desc}</div>
+                    </div>
+                  </div>
+                  {i < 2 && (
+                    <div className="flex justify-center py-2">
+                      <ArrowRight size={16} strokeWidth={2} className="text-[var(--text-muted)] rotate-90" />
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
         </div>
