@@ -184,7 +184,7 @@ function ProblemSection() {
   const stats = [
     { value: 'HOURS', subtext: 'Spent searching for diagnostic answers' },
     { value: '10+', subtext: 'Systems storing fragmented knowledge' },
-    { value: '72%', subtext: 'Of expertise lost on technician turnover' },
+    { value: '4.2 HRS', subtext: 'Average MTTR lost to manual diagnosis' },
   ]
 
   return (
@@ -234,7 +234,7 @@ function DataSection() {
           <div className="bg-[var(--void)] p-8">
             <div className="font-mono-ui text-[11px] text-[var(--text-muted)] tracking-widest uppercase mb-4">How we ingest</div>
             <div className="space-y-3">
-              {['Spreadsheets & PDFs', 'Ticketing systems', 'Engineering notes', 'Email archives', 'Service logs'].map((item, i) => (
+              {['Spreadsheets & PDFs', 'Incident reports', 'Ticketing systems', 'Engineering notes', 'Email archives', 'Service logs'].map((item, i) => (
                 <div key={i} className="flex items-center gap-3">
                   <CheckCircle size={14} strokeWidth={2} className="text-[var(--red)] flex-shrink-0" />
                   <span className="font-mono-ui text-[12px] text-[var(--text-secondary)]">{item}</span>
