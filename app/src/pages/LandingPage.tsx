@@ -294,7 +294,7 @@ function CustomizationSection() {
       <div className="max-w-6xl mx-auto grid md:grid-cols-[55%_45%] gap-16 items-center">
         <FadeInSection>
           <h2 className="font-display text-[var(--text-primary)]" style={{ fontSize: 'clamp(2rem, 4vw, 3rem)' }}>
-            Built for your devices, not a generic demo.
+            Built for your devices.
           </h2>
           <p className="mt-5 font-mono-ui text-[13px] text-[var(--text-secondary)] leading-relaxed max-w-[55ch] tracking-wide">
             Every Boa deployment is trained on your specific hardware, failure modes, and institutional knowledge. Not a chatbot. Not a search tool. A diagnostic agent that knows your products as well as your best engineer.
@@ -425,6 +425,39 @@ function HowItWorksSection() {
   )
 }
 
+/* ─── SEARCH DIAGNOSTICS ─── */
+function SearchDiagnosticsSection() {
+  return (
+    <section className="py-32 px-6 bg-[var(--surface)] border-b-2 border-[var(--border-default)]">
+      <div className="max-w-6xl mx-auto grid md:grid-cols-[55%_45%] gap-16 items-center">
+        <FadeInSection>
+          <h2 className="font-display text-[var(--text-primary)]" style={{ fontSize: 'clamp(2rem, 4vw, 3rem)' }}>
+            Ask about your devices in plain English.
+          </h2>
+          <p className="mt-5 font-mono-ui text-[13px] text-[var(--text-secondary)] leading-relaxed max-w-[55ch] tracking-wide">
+            "Why did this pump fail last month?" "What's the history of this error code?" "Which units have this issue?" Ask your diagnostics in natural language. Boa searches your institutional knowledge and returns answers instantly.
+          </p>
+        </FadeInSection>
+        <div className="bg-[var(--border-default)] p-px">
+          <div className="bg-[var(--void)] p-8 space-y-4">
+            <div className="font-mono-ui text-[11px] text-[var(--text-muted)] tracking-widest uppercase font-bold mb-4">Example queries</div>
+            {[
+              '"Why did this pump fail?"',
+              '"What error codes appear most?"',
+              '"Which models have bearing issues?"',
+              '"Show me similar failures"',
+            ].map((query, i) => (
+              <div key={i} className="bg-[var(--surface)] px-4 py-3 border-l-2 border-[var(--red)] font-mono-ui text-[12px] text-[var(--text-secondary)]">
+                {query}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
 /* ─── USE CASES ─── */
 function UseCasesSection() {
   const cases = [
@@ -533,6 +566,7 @@ export default function LandingPage() {
       <WorkflowSection />
       <CustomizationSection />
       <PartsSection />
+      <SearchDiagnosticsSection />
       <UseCasesSection />
       <ManifestoSection />
       <Footer />
