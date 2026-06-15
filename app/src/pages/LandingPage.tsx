@@ -445,7 +445,7 @@ function SearchDiagnosticsSection() {
 function UseCasesSection() {
   const cases = [
     { icon: Shield, industry: 'INDUSTRIAL', title: 'Reduce downtime', copy: 'Diagnostic agents diagnose failures in minutes instead of hours. Every moment counts when production is halted.' },
-    { icon: Stethoscope, industry: 'MEDICAL DEVICES', title: 'Service quality', copy: 'Agents trained on clinical protocols and maintenance procedures. Consistent, reliable diagnostics across every technician and region.' },
+    { icon: Stethoscope, industry: 'ENERGY', title: 'Infrastructure reliability', copy: 'Critical infrastructure requires instant diagnostics. Boa keeps your systems online and reduces emergency response time.' },
     { icon: Crosshair, industry: 'IOT & ROBOTICS', title: 'Knowledge at scale', copy: 'Expertise captured once, deployed everywhere. New technicians diagnose with the competence of your most experienced engineers.' },
   ]
 
