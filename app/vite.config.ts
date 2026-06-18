@@ -21,4 +21,8 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  // @xenova/transformers ships onnxruntime-web; let it load unbundled in the browser
+  optimizeDeps: {
+    exclude: ['@xenova/transformers'],
+  },
 });

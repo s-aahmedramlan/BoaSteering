@@ -100,51 +100,85 @@ export function createApiRouter(): Router {
     }
   });
 
-  // POST /api/diagnose - Synthesize diagnosis from incident and similar cases
+  // POST /api/diagnose - Differential diagnosis for an Able Price Sign sign
   router.post('/diagnose', async (req: Request, res: Response): Promise<void> => {
     try {
-      const { incident, system, similarCases } = req.body as {
-        incident: string;
-        system: string;
-        similarCases: Array<{ id: string; problem: string; action: string; component: string }>;
+      const { readings, errorCodes, notes, similarCases } = req.body as {
+        readings: Record<string, string>;
+        errorCodes: string[];
+        notes?: string;
+        similarCases: Array<{
+          ticket_id: string;
+          technician_notes: string;
+          root_cause: string;
+          component_failed: string;
+          part_number: string;
+          rma_required: boolean;
+          error_codes: string[];
+          voltage_12v_rail: number;
+          rs485_response: boolean;
+          price_panels: string;
+        }>;
       };
 
-      if (!incident || !similarCases || similarCases.length === 0) {
-        res.status(400).json({ error: 'incident and similar cases required' });
+      if (!readings || !similarCases || similarCases.length === 0) {
+        res.status(400).json({ error: 'readings and similar cases required' });
         return;
       }
 
-      const client = new Anthropic({
-        apiKey: process.env.ANTHROPIC_API_KEY,
-      });
+      const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+      const readingsText = Object.entries(readings)
+        .map(([k, v]) => `  ${k}: ${v}`)
+        .join('\n');
 
       const casesText = similarCases
-        .map((c) => `Record #${c.id}: Problem: "${c.problem}" → Action: "${c.action}"`)
-        .join('\n');
+        .map(
+          (c, i) =>
+            `Case ${i + 1} — ${c.ticket_id}\n` +
+            `  12V rail: ${c.voltage_12v_rail}V · RS-485: ${c.rs485_response ? 'responding' : 'no response'} · panels: ${c.price_panels} · codes: ${c.error_codes.join(', ') || 'none'}\n` +
+            `  notes: "${c.technician_notes}"\n` +
+            `  resolved as: ${c.root_cause} → ${c.component_failed} (part ${c.part_number || 'none'}, RMA ${c.rma_required ? 'yes' : 'no'})`,
+        )
+        .join('\n\n');
 
       const message = await client.messages.create({
         model: 'claude-sonnet-4-6',
-        max_tokens: 500,
-        system: `You are Boa, an automated diagnostic system for field service technicians. You analyze maintenance problems and prescribe corrective actions based on similar cases from service history.
+        max_tokens: 1200,
+        system: `You are Boa, an AI diagnostic agent trained on Able's Price Sync service history. You reason like an experienced Able field service engineer — someone who has seen hundreds of Price Sync LTE failures and knows the diagnostic patterns cold.
 
-Given a new incident and similar historical cases, synthesize a diagnosis as JSON with these fields:
-- root_cause: One sentence explaining the root cause
-- confidence: Integer 60-100
-- steps: Array of 3-4 numbered action steps (keep each step to one sentence)
-- component: The primary component needing repair/replacement
-- rma_required: Boolean
+A technician has submitted live diagnostic readings from a failed Price Sync sign. You have been given the 4 most similar resolved tickets from service history.
 
-Output ONLY valid JSON, no markdown or explanations.`,
+Reason explicitly: what do the voltage readings rule out? What does the RS-485 status tell you? What does the error code pattern indicate? Then commit to a diagnosis with step-by-step repair instructions that sound like how Able's techs actually talk. Use Able product terminology (PCU, Price Sync, price panels, 12V rail) — never generic terms.
+
+Real Able part numbers: ABLE-PSU-12V-150W (power supply), ABLE-DGT-MOD-8IN (digit module), ABLE-CBL-RS485-10FT (RS-485 cable), ABLE-PCU-COMMBD (PCU comm board).
+
+Return ONLY valid JSON (no markdown), with this exact shape:
+{
+  "ruling_out": [{"cause": "...", "reason": "..."}, ...],   // 2-3 causes you eliminate, each with a specific reason tied to the readings
+  "most_likely_cause": "...",
+  "confidence": 60-100,
+  "reasoning": "...",                                         // cite how many retrieved tickets share the signature
+  "steps": ["...", ...],                                      // 5-7 concrete repair steps in Able's voice
+  "component": "...",
+  "part_number": "ABLE-...",                                  // empty string if no part needed
+  "rma_required": true/false,
+  "rma_reason": "...",                                        // empty string if no RMA
+  "fleet_note": "..."                                         // optional proactive fleet-wide pattern, or omit
+}`,
         messages: [
           {
             role: 'user',
-            content: `New incident in ${system}:
-"${incident}"
+            content: `Live diagnostic readings:
+${readingsText}
+  error_codes: ${errorCodes.join(', ') || 'none'}
+${notes ? `  technician_notes: "${notes}"` : ''}
 
-Similar cases from service history:
+Most similar resolved tickets from Price Sync service history:
+
 ${casesText}
 
-Synthesize a diagnosis and corrective action plan as JSON.`,
+Diagnose this sign. Return the JSON.`,
           },
         ],
       });
