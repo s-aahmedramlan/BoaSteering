@@ -157,7 +157,7 @@ function HeroSection() {
           </a>
           <a
             href="#/demo"
-            className="px-8 py-3 bg-transparent border-2 border-[var(--border-default)] text-[var(--text-primary)] font-mono-ui text-[12px] tracking-widest hover:border-[var(--red)] hover:text-[var(--red)] transition-colors inline-block"
+            className="px-8 py-3 bg-white/5 border-2 border-white/70 text-white font-mono-ui text-[12px] tracking-widest hover:bg-white hover:text-[var(--void)] hover:border-white transition-colors inline-block"
             style={{ borderRadius: 0 }}
           >
             TRY DEMO ›
