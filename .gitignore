@@ -3,3 +3,5 @@ dist/
 .env
 *.env.local
 drizzle/
+node_modules
+dist
