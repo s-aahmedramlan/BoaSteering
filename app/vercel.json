@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/diagnose.ts": {
+      "maxDuration": 60
+    }
+  }
+}
