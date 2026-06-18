@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { ChevronRight, Loader, AlertCircle, CheckCircle, ArrowRight } from 'lucide-react'
 
@@ -9,6 +9,7 @@ interface MaintenanceRecord {
   problem: string
   action: string
   component: string
+  source?: string
 }
 
 interface RetrievedRecord extends MaintenanceRecord {
@@ -23,27 +24,21 @@ interface DiagnosisOutput {
   rma_required: boolean
 }
 
-// Real MaintNet records
-const KNOWLEDGE_BASE: MaintenanceRecord[] = [
-  { id: '111574', date: '7/15/2012', system: 'Airframe', problem: 'CYL #1 BAFFLE CRACKED AT SCREW SUPPORT', action: 'REMOVED & FABRICATED BAFFLE PATCH PER SPEC', component: 'Cylinder baffle' },
-  { id: '111585', date: '8/3/2012', system: 'Engine', problem: 'PUSH ROD TUBE SEAL LEAKING @ ENGINE', action: 'REMOVED & REPLACED PUSH ROD TUBE SEALS', component: 'Push rod tube' },
-  { id: '111563', date: '7/2/2012', system: 'Airframe', problem: 'CAP SCREW MISSING ON ENGINE BAFFLE ATTACH POINT', action: 'INSTALLED REPLACEMENT CAP SCREW', component: 'Baffle attachment' },
-  { id: '111602', date: '9/1/2012', system: 'Engine', problem: 'R/H FWD UPPER BAFL SEAL NEEDS TO BE RESECURED', action: 'INSTALLED POP RIVET TO RESECURE R/H FWD BAF SEAL', component: 'Baffle seal' },
-  { id: '111641', date: '10/20/2012', system: 'Engine', problem: 'FWD BAFFLE BULGE OBSERVED AT RIVET LINE', action: 'REPLACED DAMAGED RIVETS & RESECURED BAFFLE', component: 'Baffle rivets' },
-  { id: '111618', date: '9/15/2012', system: 'Electrical', problem: 'ALTERNATOR OUTPUT LEAD CORROSION CAUSING VOLTAGE DROP', action: 'CLEANED CORROSION FROM LEAD & TERMINALS', component: 'Alternator wiring' },
-  { id: '111589', date: '8/10/2012', system: 'Engine', problem: 'OIL LEAK FROM CYLINDER HEAD GASKET', action: 'REPLACED CYLINDER HEAD GASKET', component: 'Head gasket' },
-  { id: '111576', date: '7/22/2012', system: 'Airframe', problem: 'FUSELAGE SKIN PANEL CRACKING NEAR WING ROOT', action: 'PATCHED SKIN WITH ALUMINUM DOUBLER', component: 'Fuselage skin' },
-  { id: '111595', date: '8/25/2012', system: 'Engine', problem: 'FUEL PUMP LEAD CAUSING FUEL SPILL ON REMOVAL', action: 'REROUTED LEAD & INSTALLED PROTECTIVE SLEEVE', component: 'Fuel pump lead' },
-  { id: '111612', date: '9/8/2012', system: 'Electrical', problem: 'LANDING LIGHT DIMMING DURING HIGH ELECTRICAL LOAD', action: 'INSPECTED & CLEANED ALL ELECTRICAL CONNECTIONS', component: 'Landing light circuit' },
-]
-
 export default function DemoPage() {
+  const [knowledgeBase, setKnowledgeBase] = useState<MaintenanceRecord[]>([])
   const [incidentText, setIncidentText] = useState('')
   const [system, setSystem] = useState('Engine')
   const [retrievedRecords, setRetrievedRecords] = useState<RetrievedRecord[]>([])
   const [diagnosis, setDiagnosis] = useState<DiagnosisOutput | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    fetch('/knowledge-base.json')
+      .then(r => r.json())
+      .then(data => setKnowledgeBase(data))
+      .catch(() => setError('Failed to load knowledge base'))
+  }, [])
 
   const cosineSimilarity = (a: number[], b: number[]): number => {
     const dotProduct = a.reduce((sum, val, i) => sum + val * b[i], 0)
@@ -58,16 +53,15 @@ export default function DemoPage() {
     words.forEach(word => {
       vector[word] = (vector[word] || 0) + 1
     })
-    // Convert to fixed-size vector
-    const allWords = Array.from(new Set(KNOWLEDGE_BASE.flatMap(r => r.problem.toLowerCase().split(/\s+/))))
+    const allWords = Array.from(new Set(knowledgeBase.flatMap(r => r.problem.toLowerCase().split(/\s+/))))
     return allWords.map(w => vector[w] || 0)
   }
 
   const retrieveSimilarCases = (text: string) => {
-    if (!text.trim()) return
+    if (!text.trim() || knowledgeBase.length === 0) return
 
     const queryVector = vectorizeText(text)
-    const similarities = KNOWLEDGE_BASE
+    const similarities = knowledgeBase
       .filter(r => r.system === system)
       .map(record => ({
         ...record,
@@ -134,7 +128,10 @@ export default function DemoPage() {
       <div className="p-6 max-w-7xl mx-auto">
         <div className="mb-8">
           <h1 className="font-display text-white text-4xl mb-2">Diagnostic Demo</h1>
-          <p className="font-mono-ui text-[13px] text-[var(--text-muted)]">Powered by 6,169 real maintenance records</p>
+          <div className="flex items-center gap-3">
+            <span className="px-3 py-1 bg-green-900/30 text-green-200 font-mono-ui text-[11px] tracking-widest">REAL DATA</span>
+            <p className="font-mono-ui text-[13px] text-[var(--text-muted)]">50 real ASRS maintenance reports + demo scenarios</p>
+          </div>
         </div>
 
         {/* Three-panel layout */}
@@ -246,6 +243,9 @@ export default function DemoPage() {
                     <div className="flex items-center gap-2">
                       <span className="font-mono-ui text-[11px] text-[var(--text-primary)] font-bold">#{record.id}</span>
                       <span className="font-mono-ui text-[10px] text-[var(--text-muted)]">{record.date}</span>
+                      {record.source === 'ASRS Real Report' && (
+                        <span className="px-2 py-0.5 bg-blue-900/30 text-blue-200 font-mono-ui text-[9px] tracking-widest">ASRS</span>
+                      )}
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="px-2 py-1 bg-[var(--red)] text-white font-mono-ui text-[10px] tracking-widest">
