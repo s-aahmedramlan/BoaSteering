@@ -144,7 +144,7 @@ function HeroSection() {
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 1.1 }}
-          className="mt-10 flex items-center gap-px"
+          className="mt-10 flex items-center justify-center gap-3 flex-wrap"
         >
           <a
             href="https://calendly.com/justin-shakergayen/30min"
@@ -154,6 +154,13 @@ function HeroSection() {
             style={{ borderRadius: 0 }}
           >
             BOOK A DEMO ›
+          </a>
+          <a
+            href="#/demo"
+            className="px-8 py-3 bg-transparent border-2 border-[var(--border-default)] text-[var(--text-primary)] font-mono-ui text-[12px] tracking-widest hover:border-[var(--red)] hover:text-[var(--red)] transition-colors inline-block"
+            style={{ borderRadius: 0 }}
+          >
+            TRY DEMO ›
           </a>
         </motion.div>
 
