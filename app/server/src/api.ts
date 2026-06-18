@@ -183,10 +183,15 @@ Diagnose this sign. Return the JSON.`,
       });
 
       const text = message.content[0].type === 'text' ? message.content[0].text : '';
-      // Claude sometimes wraps JSON in ```json ... ``` fences — strip them before parsing
-      const cleaned = text.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
-      const diagnosis = JSON.parse(cleaned);
-      res.json(diagnosis);
+      // Be robust to ```json fences or stray prose: extract the JSON object substring.
+      const stripped = text.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+      const match = stripped.match(/\{[\s\S]*\}/);
+      try {
+        res.json(JSON.parse(match ? match[0] : stripped));
+      } catch (parseErr) {
+        console.error('[boa:api] diagnose JSON parse failed. Raw output:', text);
+        throw parseErr;
+      }
     } catch (err) {
       console.error('[boa:api] POST /diagnose error:', err);
       res.status(500).json({ error: 'diagnosis synthesis failed' });
