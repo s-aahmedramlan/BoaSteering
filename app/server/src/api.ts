@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import Anthropic from '@anthropic-ai/sdk';
 import { getPool } from './db';
 
 export function createApiRouter(): Router {
@@ -96,6 +97,64 @@ export function createApiRouter(): Router {
     } catch (err) {
       console.error('[boa:api] PATCH /facts/:id/verify error:', err);
       res.status(500).json({ error: 'internal server error' });
+    }
+  });
+
+  // POST /api/diagnose - Synthesize diagnosis from incident and similar cases
+  router.post('/diagnose', async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { incident, system, similarCases } = req.body as {
+        incident: string;
+        system: string;
+        similarCases: Array<{ id: string; problem: string; action: string; component: string }>;
+      };
+
+      if (!incident || !similarCases || similarCases.length === 0) {
+        res.status(400).json({ error: 'incident and similar cases required' });
+        return;
+      }
+
+      const client = new Anthropic({
+        apiKey: process.env.ANTHROPIC_API_KEY,
+      });
+
+      const casesText = similarCases
+        .map((c) => `Record #${c.id}: Problem: "${c.problem}" → Action: "${c.action}"`)
+        .join('\n');
+
+      const message = await client.messages.create({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 500,
+        system: `You are Boa, an automated diagnostic system for field service technicians. You analyze maintenance problems and prescribe corrective actions based on similar cases from service history.
+
+Given a new incident and similar historical cases, synthesize a diagnosis as JSON with these fields:
+- root_cause: One sentence explaining the root cause
+- confidence: Integer 60-100
+- steps: Array of 3-4 numbered action steps (keep each step to one sentence)
+- component: The primary component needing repair/replacement
+- rma_required: Boolean
+
+Output ONLY valid JSON, no markdown or explanations.`,
+        messages: [
+          {
+            role: 'user',
+            content: `New incident in ${system}:
+"${incident}"
+
+Similar cases from service history:
+${casesText}
+
+Synthesize a diagnosis and corrective action plan as JSON.`,
+          },
+        ],
+      });
+
+      const text = message.content[0].type === 'text' ? message.content[0].text : '';
+      const diagnosis = JSON.parse(text);
+      res.json(diagnosis);
+    } catch (err) {
+      console.error('[boa:api] POST /diagnose error:', err);
+      res.status(500).json({ error: 'diagnosis synthesis failed' });
     }
   });
 
