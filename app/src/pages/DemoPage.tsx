@@ -258,10 +258,10 @@ export default function DemoPage() {
   return (
     <div className="min-h-screen bg-[var(--void)]" style={{ borderRadius: 0 }}>
       <div className="border-b-2 border-[var(--border-default)] px-6 py-4 flex items-center justify-between">
-        <a href="#/" className="text-[var(--text-muted)] font-mono-ui text-[12px] hover:text-[var(--text-primary)] transition-colors">
+        <a href="#/" className="text-[var(--text-muted)] font-mono-ui text-[13px] hover:text-[var(--text-primary)] transition-colors">
           ← useboa.com
         </a>
-        <span className="font-mono-ui text-[10px] text-[var(--text-muted)] tracking-widest">
+        <span className="font-mono-ui text-[11px] text-[var(--text-muted)] tracking-widest">
           {modelReady ? 'SEMANTIC RETRIEVAL · READY' : 'RETRIEVAL · KEYWORD MODE'}
         </span>
       </div>
@@ -269,7 +269,7 @@ export default function DemoPage() {
       <div className="p-6 max-w-7xl mx-auto">
         <div className="mb-8">
           <h1 className="font-display text-white text-4xl mb-2">Price Sync Diagnostics</h1>
-          <p className="font-mono-ui text-[13px] text-[var(--text-muted)]">
+          <p className="font-mono-ui text-[14px] text-[var(--text-secondary)]">
             Pre-loaded with common Price Sync failure patterns · {records.length} service tickets
           </p>
         </div>
@@ -339,7 +339,7 @@ export default function DemoPage() {
               <div className="flex flex-wrap gap-1.5 mt-1">
                 {ERROR_CODES.map(c => (
                   <button key={c} onClick={() => toggleCode(c)}
-                    className={`px-2 py-1 font-mono-ui text-[10px] tracking-wide border transition-colors ${
+                    className={`px-2 py-1 font-mono-ui text-[11px] tracking-wide border transition-colors ${
                       codes.includes(c)
                         ? 'bg-[var(--red)] text-white border-[var(--red)]'
                         : 'bg-[var(--void)] text-[var(--text-muted)] border-[var(--border-default)] hover:border-[var(--text-muted)]'
@@ -354,22 +354,22 @@ export default function DemoPage() {
               <Label>Technician notes (optional)</Label>
               <textarea value={form.notes} onChange={e => setF('notes', e.target.value)}
                 placeholder="Free-text field observations…"
-                className="w-full h-16 p-2 bg-[var(--void)] border border-[var(--border-default)] font-mono-ui text-[11px] text-[var(--text-primary)] placeholder-[var(--text-muted)]"
+                className="w-full h-16 p-2 bg-[var(--void)] border border-[var(--border-default)] font-mono-ui text-[12px] text-[var(--text-primary)] placeholder-[var(--text-muted)]"
                 style={{ borderRadius: 0 }} />
             </div>
 
             <button onClick={runBoa} disabled={loading || records.length === 0}
-              className="w-full mt-4 py-2.5 px-4 bg-[var(--red)] text-white font-mono-ui text-[12px] tracking-widest hover:bg-[#ff2a2a] disabled:opacity-50 transition-colors"
+              className="w-full mt-4 py-2.5 px-4 bg-[var(--red)] text-white font-mono-ui text-[13px] tracking-widest hover:bg-[#ff2a2a] disabled:opacity-50 transition-colors"
               style={{ borderRadius: 0 }}>
               {loading ? 'ANALYZING…' : 'RUN BOA ›'}
             </button>
 
             <div className="border-t border-[var(--border-default)] mt-4 pt-3">
-              <p className="font-mono-ui text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-2">Presets</p>
+              <p className="font-mono-ui text-[11px] text-[var(--text-muted)] uppercase tracking-widest mb-2">Presets</p>
               <div className="space-y-1.5">
                 {PRESETS.map(p => (
                   <button key={p.label} onClick={() => applyPreset(p)}
-                    className="w-full text-left px-3 py-2 bg-[var(--void)] border border-[var(--border-default)] hover:border-[var(--red)] font-mono-ui text-[11px] text-[var(--text-secondary)] transition-colors"
+                    className="w-full text-left px-3 py-2 bg-[var(--void)] border border-[var(--border-default)] hover:border-[var(--red)] font-mono-ui text-[12px] text-[var(--text-secondary)] transition-colors"
                     style={{ borderRadius: 0 }}>
                     {p.label}
                   </button>
@@ -384,27 +384,27 @@ export default function DemoPage() {
             className="bg-[var(--surface)] border-2 border-[var(--border-default)] p-5" style={{ borderRadius: 0 }}
           >
             <h2 className="font-display text-[var(--text-primary)] mb-1 text-lg">Similar cases from Price Sync service history</h2>
-            <p className="font-mono-ui text-[10px] text-[var(--text-muted)] mb-4">
+            <p className="font-mono-ui text-[11px] text-[var(--text-muted)] mb-4">
               Connect your NetSuite export to run on Able's 15 years of real records.
             </p>
 
             {error && (
               <div className="flex gap-2 p-3 bg-red-900/20 border border-red-700/50 mb-4">
                 <AlertCircle size={16} className="text-red-500 flex-shrink-0" />
-                <p className="font-mono-ui text-[11px] text-red-200">{error}</p>
+                <p className="font-mono-ui text-[12px] text-red-200">{error}</p>
               </div>
             )}
 
             {retrieved.length === 0 && !loading && (
               <div className="text-center py-12">
-                <p className="font-mono-ui text-[12px] text-[var(--text-muted)]">Enter readings and run Boa to retrieve similar tickets</p>
+                <p className="font-mono-ui text-[13px] text-[var(--text-muted)]">Enter readings and run Boa to retrieve similar tickets</p>
               </div>
             )}
 
             {loading && retrieved.length === 0 && (
               <div className="flex items-center justify-center py-12 gap-2">
                 <Loader size={16} className="text-[var(--red)] animate-spin" />
-                <p className="font-mono-ui text-[12px] text-[var(--text-muted)]">Retrieving cases…</p>
+                <p className="font-mono-ui text-[13px] text-[var(--text-muted)]">Retrieving cases…</p>
               </div>
             )}
 
@@ -415,16 +415,16 @@ export default function DemoPage() {
                   className="bg-[var(--void)] border border-[var(--border-default)] p-3" style={{ borderRadius: 0 }}>
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-mono-ui text-[11px] text-[var(--text-primary)] font-bold">{r.ticket_id}</span>
-                      <span className="font-mono-ui text-[10px] text-[var(--text-muted)]">{r.date}</span>
-                      <span className="font-mono-ui text-[10px] text-[var(--text-muted)]">{r.site_id}</span>
-                      <span className="font-mono-ui text-[9px] text-[var(--text-muted)] border border-[var(--border-default)] px-1">{r.product}</span>
+                      <span className="font-mono-ui text-[12px] text-[var(--text-primary)] font-bold">{r.ticket_id}</span>
+                      <span className="font-mono-ui text-[11px] text-[var(--text-muted)]">{r.date}</span>
+                      <span className="font-mono-ui text-[11px] text-[var(--text-muted)]">{r.site_id}</span>
+                      <span className="font-mono-ui text-[11px] text-[var(--text-muted)] border border-[var(--border-default)] px-1.5 py-0.5">{r.product}</span>
                     </div>
-                    <span className="px-2 py-1 bg-green-900/30 text-green-200 font-mono-ui text-[10px]">{r.score}%</span>
+                    <span className="px-2 py-1 bg-green-900/30 text-green-200 font-mono-ui text-[11px]">{r.score}%</span>
                   </div>
-                  <p className="font-mono-ui text-[11px] text-[var(--text-secondary)] leading-relaxed mb-2">"{r.technician_notes}"</p>
+                  <p className="font-mono-ui text-[13px] text-[var(--text-primary)] leading-relaxed mb-2">"{r.technician_notes}"</p>
                   <div className="flex items-center justify-between border-t border-[var(--border-default)] pt-2">
-                    <span className="font-mono-ui text-[10px] text-[var(--text-muted)]">{r.root_cause}</span>
+                    <span className="font-mono-ui text-[12px] text-[var(--text-secondary)]">{r.root_cause}</span>
                     <button onClick={() => setExpanded(expanded === r.ticket_id ? null : r.ticket_id)}
                       className="text-[var(--text-muted)] hover:text-[var(--text-primary)]">
                       <ChevronDown size={14} className={expanded === r.ticket_id ? 'rotate-180 transition-transform' : 'transition-transform'} />
@@ -434,7 +434,7 @@ export default function DemoPage() {
                     {expanded === r.ticket_id && (
                       <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
                         className="overflow-hidden">
-                        <div className="grid grid-cols-2 gap-x-3 gap-y-1 mt-2 pt-2 border-t border-[var(--border-default)] font-mono-ui text-[10px] text-[var(--text-muted)]">
+                        <div className="grid grid-cols-2 gap-x-3 gap-y-1 mt-2 pt-2 border-t border-[var(--border-default)] font-mono-ui text-[11px] text-[var(--text-muted)]">
                           <span>12V rail: {r.voltage_12v_rail}V</span>
                           <span>RS-485: {r.rs485_response ? 'responding' : 'no response'}</span>
                           <span>Panels: {r.price_panels_lit}/{r.total_price_panels}</span>
@@ -461,14 +461,14 @@ export default function DemoPage() {
 
             {!diagnosis && !loading && (
               <div className="bg-[var(--surface)] border-2 border-[var(--border-default)] p-6 text-center" style={{ borderRadius: 0 }}>
-                <p className="font-mono-ui text-[12px] text-[var(--text-muted)]">Diagnosis appears here after Boa reasons over the retrieved cases</p>
+                <p className="font-mono-ui text-[13px] text-[var(--text-muted)]">Diagnosis appears here after Boa reasons over the retrieved cases</p>
               </div>
             )}
 
             {loading && (
               <div className="bg-[var(--surface)] border-2 border-[var(--border-default)] p-6 flex items-center justify-center gap-2" style={{ borderRadius: 0 }}>
                 <Loader size={16} className="text-[var(--red)] animate-spin" />
-                <p className="font-mono-ui text-[12px] text-[var(--text-muted)]">Reasoning over service history…</p>
+                <p className="font-mono-ui text-[13px] text-[var(--text-muted)]">Reasoning over service history…</p>
               </div>
             )}
 
@@ -476,44 +476,44 @@ export default function DemoPage() {
               <>
                 {/* Card 1 — differential */}
                 <div className="bg-[var(--surface)] border-2 border-[var(--border-default)] p-4" style={{ borderRadius: 0 }}>
-                  <p className="font-mono-ui text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-3">Differential</p>
+                  <p className="font-mono-ui text-[11px] text-[var(--text-muted)] uppercase tracking-widest mb-3">Differential</p>
                   <div className="space-y-2.5">
                     {diagnosis.ruling_out.map((r, i) => (
                       <div key={i} className="flex gap-2">
                         <XCircle size={14} className="text-[var(--text-muted)] flex-shrink-0 mt-0.5" />
                         <div>
-                          <p className="font-mono-ui text-[11px] text-[var(--text-secondary)] line-through">{r.cause}</p>
-                          <p className="font-mono-ui text-[10px] text-[var(--text-muted)]">{r.reason}</p>
+                          <p className="font-mono-ui text-[13px] text-[var(--text-muted)] line-through">{r.cause}</p>
+                          <p className="font-mono-ui text-[12px] text-[var(--text-secondary)] leading-relaxed mt-0.5">{r.reason}</p>
                         </div>
                       </div>
                     ))}
                     <div className="flex gap-2 pt-1 border-t border-[var(--border-default)] mt-2">
                       <ArrowRight size={14} className="text-[var(--red)] flex-shrink-0 mt-0.5" />
-                      <p className="font-mono-ui text-[12px] text-[var(--text-primary)] font-bold">{diagnosis.most_likely_cause}</p>
+                      <p className="font-mono-ui text-[13px] text-[var(--text-primary)] font-bold">{diagnosis.most_likely_cause}</p>
                     </div>
                   </div>
                 </div>
 
                 {/* Card 2 — confidence + reasoning */}
                 <div className="bg-[var(--surface)] border-2 border-[var(--border-default)] p-4" style={{ borderRadius: 0 }}>
-                  <p className="font-mono-ui text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-2">Confidence</p>
+                  <p className="font-mono-ui text-[11px] text-[var(--text-muted)] uppercase tracking-widest mb-2">Confidence</p>
                   <div className="flex items-center gap-3 mb-3">
                     <div className="flex-1 bg-[var(--void)] h-2 border border-[var(--border-default)]">
                       <motion.div className="h-full bg-[var(--red)]" initial={{ width: 0 }} animate={{ width: `${diagnosis.confidence}%` }} transition={{ duration: 0.6 }} />
                     </div>
                     <span className="font-mono-ui text-[13px] text-[var(--red)] font-bold">{diagnosis.confidence}%</span>
                   </div>
-                  <p className="font-mono-ui text-[11px] text-[var(--text-secondary)] leading-relaxed">{diagnosis.reasoning}</p>
+                  <p className="font-mono-ui text-[13px] text-[var(--text-secondary)] leading-relaxed">{diagnosis.reasoning}</p>
                 </div>
 
                 {/* Card 3 — repair steps */}
                 <div className="bg-[var(--surface)] border-2 border-[var(--border-default)] p-4" style={{ borderRadius: 0 }}>
-                  <p className="font-mono-ui text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-3">Repair steps</p>
-                  <ol className="space-y-2">
+                  <p className="font-mono-ui text-[11px] text-[var(--text-muted)] uppercase tracking-widest mb-3">Repair steps</p>
+                  <ol className="space-y-2.5">
                     {diagnosis.steps.map((s, i) => (
-                      <li key={i} className="flex gap-2">
-                        <span className="font-mono-ui text-[11px] text-[var(--red)] font-bold flex-shrink-0">{i + 1}.</span>
-                        <span className="font-mono-ui text-[11px] text-[var(--text-secondary)] leading-relaxed">{s}</span>
+                      <li key={i} className="flex gap-2.5">
+                        <span className="font-mono-ui text-[13px] text-[var(--red)] font-bold flex-shrink-0">{i + 1}.</span>
+                        <span className="font-mono-ui text-[13px] text-[var(--text-secondary)] leading-relaxed">{s}</span>
                       </li>
                     ))}
                   </ol>
@@ -521,8 +521,8 @@ export default function DemoPage() {
 
                 {/* Card 4 — workflow chain */}
                 <div className="bg-[var(--surface)] border-2 border-[var(--border-default)] p-4" style={{ borderRadius: 0 }}>
-                  <p className="font-mono-ui text-[10px] text-[var(--text-muted)] uppercase tracking-widest mb-3">Workflow</p>
-                  <div className="space-y-1.5 font-mono-ui text-[11px]">
+                  <p className="font-mono-ui text-[11px] text-[var(--text-muted)] uppercase tracking-widest mb-3">Workflow</p>
+                  <div className="space-y-1.5 font-mono-ui text-[12px]">
                     <ChainRow done>Ticket {ticketId} opened</ChainRow>
                     <ChainRow done>{retrieved.length} similar cases retrieved ({retrieved.map(r => r.score + '%').join(', ')})</ChainRow>
                     <ChainRow done>Root cause: {diagnosis.most_likely_cause}</ChainRow>
@@ -534,11 +534,11 @@ export default function DemoPage() {
                   {!approved ? (
                     <div className="flex gap-2 mt-4">
                       <button onClick={approve}
-                        className="flex-1 py-2 bg-[var(--red)] text-white font-mono-ui text-[11px] tracking-widest hover:bg-[#ff2a2a] transition-colors"
+                        className="flex-1 py-2 bg-[var(--red)] text-white font-mono-ui text-[12px] tracking-widest hover:bg-[#ff2a2a] transition-colors"
                         style={{ borderRadius: 0 }}>
                         APPROVE & DISPATCH →
                       </button>
-                      <button className="px-4 py-2 border border-[var(--border-default)] text-[var(--text-muted)] font-mono-ui text-[11px] tracking-widest hover:text-[var(--text-primary)] transition-colors"
+                      <button className="px-4 py-2 border border-[var(--border-default)] text-[var(--text-muted)] font-mono-ui text-[12px] tracking-widest hover:text-[var(--text-primary)] transition-colors"
                         style={{ borderRadius: 0 }}>
                         FLAG
                       </button>
@@ -551,7 +551,7 @@ export default function DemoPage() {
                       {approveStage >= 4 && (
                         <div className="flex items-center gap-2 text-green-300">
                           <CheckCircle size={14} />
-                          <span className="font-mono-ui text-[11px]">Dispatched. Field tech notified by SMS.</span>
+                          <span className="font-mono-ui text-[12px]">Dispatched. Field tech notified by SMS.</span>
                         </div>
                       )}
                     </div>
@@ -562,7 +562,7 @@ export default function DemoPage() {
                 {diagnosis.fleet_note && (
                   <div className="border border-amber-700/50 bg-amber-900/15 p-3 flex gap-2" style={{ borderRadius: 0 }}>
                     <Zap size={14} className="text-amber-400 flex-shrink-0 mt-0.5" />
-                    <p className="font-mono-ui text-[11px] text-amber-200/90 leading-relaxed">
+                    <p className="font-mono-ui text-[12px] text-amber-200/90 leading-relaxed">
                       <span className="font-bold">Fleet insight:</span> {diagnosis.fleet_note}
                     </p>
                   </div>
@@ -578,16 +578,16 @@ export default function DemoPage() {
 
 /* ─── Small UI atoms ─── */
 function Label({ children }: { children: React.ReactNode }) {
-  return <label className="font-mono-ui text-[10px] text-[var(--text-muted)] uppercase tracking-widest block mb-1">{children}</label>
+  return <label className="font-mono-ui text-[11px] text-[var(--text-muted)] uppercase tracking-widest block mb-1">{children}</label>
 }
 function Input({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
   return <input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
-    className="w-full px-2 py-1.5 bg-[var(--void)] border border-[var(--border-default)] font-mono-ui text-[12px] text-[var(--text-primary)] placeholder-[var(--text-muted)]"
+    className="w-full px-2 py-1.5 bg-[var(--void)] border border-[var(--border-default)] font-mono-ui text-[13px] text-[var(--text-primary)] placeholder-[var(--text-muted)]"
     style={{ borderRadius: 0 }} />
 }
 function Select({ value, onChange, options }: { value: string; onChange: (v: string) => void; options: string[] }) {
   return <select value={value} onChange={e => onChange(e.target.value)}
-    className="w-full px-2 py-1.5 bg-[var(--void)] border border-[var(--border-default)] font-mono-ui text-[12px] text-[var(--text-primary)]"
+    className="w-full px-2 py-1.5 bg-[var(--void)] border border-[var(--border-default)] font-mono-ui text-[13px] text-[var(--text-primary)]"
     style={{ borderRadius: 0 }}>
     {options.map(o => <option key={o} value={o}>{o}</option>)}
   </select>
@@ -608,7 +608,7 @@ function DispatchRow({ children, active, done }: { children: React.ReactNode; ac
       {done ? <CheckCircle size={14} className="text-green-400" />
         : active ? <Loader size={14} className="text-[var(--red)] animate-spin" />
         : <CheckCircle size={14} className="text-green-400" />}
-      <span className="font-mono-ui text-[11px] text-[var(--text-secondary)]">{children}</span>
+      <span className="font-mono-ui text-[12px] text-[var(--text-secondary)]">{children}</span>
     </div>
   )
 }
