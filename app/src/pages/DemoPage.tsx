@@ -114,7 +114,7 @@ export default function DemoPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [expanded, setExpanded] = useState<string | null>(null)
-  const [modelReady, setModelReady] = useState(false)
+  const [, setModelReady] = useState(false)
   const [ticketId] = useState(() => `TKT-${4000 + Math.floor(Math.random() * 2000)}`)
   const [woId] = useState(() => `WO-${28000 + Math.floor(Math.random() * 2000)}`)
   const [approved, setApproved] = useState(false)
@@ -216,10 +216,6 @@ export default function DemoPage() {
       {/* Header */}
       <header className="border-b border-[var(--border-default)] px-6 py-4 flex items-center justify-between">
         <a href="#/" className="text-[var(--text-muted)] font-mono-ui text-[12px] hover:text-[var(--text-primary)] transition-colors">← useboa.com</a>
-        <span className="font-mono-ui text-[11px] text-[var(--text-muted)] tracking-widest inline-flex items-center gap-2">
-          <span className={`w-1.5 h-1.5 rounded-full ${modelReady ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-          {modelReady ? 'SEMANTIC RETRIEVAL · READY' : 'RETRIEVAL · KEYWORD MODE'}
-        </span>
       </header>
 
       <main className="max-w-7xl mx-auto px-6 py-10">
