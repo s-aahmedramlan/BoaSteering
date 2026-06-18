@@ -37,8 +37,7 @@ async function main(): Promise<void> {
     await runMigrations();
     console.log('[boa] database ready');
   } catch (err) {
-    console.error('[boa] database migration failed:', err);
-    process.exit(1);
+    console.warn('[boa] database unavailable — knowledge-capture routes disabled, /api/diagnose still works:', (err as Error).message);
   }
 
   const app = createProxy();

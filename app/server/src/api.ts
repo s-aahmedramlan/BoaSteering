@@ -150,7 +150,9 @@ Synthesize a diagnosis and corrective action plan as JSON.`,
       });
 
       const text = message.content[0].type === 'text' ? message.content[0].text : '';
-      const diagnosis = JSON.parse(text);
+      // Claude sometimes wraps JSON in ```json ... ``` fences — strip them before parsing
+      const cleaned = text.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+      const diagnosis = JSON.parse(cleaned);
       res.json(diagnosis);
     } catch (err) {
       console.error('[boa:api] POST /diagnose error:', err);
