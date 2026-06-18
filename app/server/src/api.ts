@@ -149,7 +149,7 @@ export function createApiRouter(): Router {
 
 A technician has submitted live diagnostic readings from a failed Price Sync sign. You have been given the 4 most similar resolved tickets from service history.
 
-Reason explicitly: what do the voltage readings rule out? What does the RS-485 status tell you? What does the error code pattern indicate? Then commit to a diagnosis with step-by-step repair instructions that sound like how Able's techs actually talk. Use Able product terminology (PCU, Price Sync, price panels, 12V rail) — never generic terms.
+Reason explicitly: what do the voltage readings rule out? What does the RS-485 status tell you? What does the error code pattern indicate? Then commit to a diagnosis. Use Able product terminology (PCU, Price Sync, price panels, 12V rail) — never generic terms.
 
 Real Able part numbers: ABLE-PSU-12V-150W (power supply), ABLE-DGT-MOD-8IN (digit module), ABLE-CBL-RS485-10FT (RS-485 cable), ABLE-PCU-COMMBD (PCU comm board).
 
@@ -159,7 +159,6 @@ Return ONLY valid JSON (no markdown), with this exact shape:
   "most_likely_cause": "...",
   "confidence": 60-100,
   "reasoning": "...",                                         // cite how many retrieved tickets share the signature
-  "steps": ["...", ...],                                      // 5-7 concrete repair steps in Able's voice
   "component": "...",
   "part_number": "ABLE-...",                                  // empty string if no part needed
   "rma_required": true/false,

@@ -34,7 +34,6 @@ interface Diagnosis {
   most_likely_cause: string
   confidence: number
   reasoning: string
-  steps: string[]
   component: string
   part_number: string
   rma_required: boolean
@@ -161,7 +160,16 @@ export default function DemoPage() {
       scored = records.map(r => ({ ...r, score: tokenScore(query, recordEmbedText(r)) }))
     }
     scored.sort((a, b) => b.score - a.score)
-    return scored.slice(0, 4).map((r, i) => {
+    // de-dupe near-identical tickets so the top 4 read as distinct cases
+    const seen = new Set<string>()
+    const uniq: Retrieved[] = []
+    for (const r of scored) {
+      const key = r.technician_notes.slice(0, 60)
+      if (seen.has(key)) continue
+      seen.add(key); uniq.push(r)
+      if (uniq.length === 4) break
+    }
+    return uniq.map((r, i) => {
       const [lo, hi] = DISPLAY_BANDS[i]
       const frac = Math.min(1, Math.max(0, r.score))
       return { ...r, score: Math.round(hi - (hi - lo) * (1 - frac) * 0.6) }
@@ -361,60 +369,41 @@ export default function DemoPage() {
                   </div>
                 </div>
 
-                {/* THE TWO PRIORITY CARDS — repair steps + workflow, above the fold */}
-                <div className="grid xl:grid-cols-2 gap-6">
-                  {/* Repair steps */}
-                  <div className="bg-white border border-[var(--border-default)] rounded-2xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-                    <div className="flex items-center gap-2 mb-4">
-                      <Wrench size={15} className="text-[var(--red)]" />
-                      <p className="font-display text-[var(--text-primary)] text-lg">Repair steps</p>
-                    </div>
-                    <ol className="space-y-3.5">
-                      {diagnosis.steps.map((s, i) => (
-                        <li key={i} className="flex gap-3">
-                          <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[var(--red)] text-white font-mono-ui text-[12px] font-semibold flex items-center justify-center">{i + 1}</span>
-                          <span className="font-mono-ui text-[13px] text-[var(--text-secondary)] leading-relaxed pt-0.5">{s}</span>
-                        </li>
-                      ))}
-                    </ol>
+                {/* PRIORITY — workflow to action */}
+                <div className="bg-white border border-[var(--border-default)] rounded-2xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+                  <div className="flex items-center gap-2 mb-4">
+                    <GitBranch size={15} className="text-[var(--red)]" />
+                    <p className="font-display text-[var(--text-primary)] text-lg">Recommended action</p>
+                  </div>
+                  <div className="grid sm:grid-cols-2 gap-x-8 gap-y-2.5">
+                    <Chain done>Ticket {ticketId} opened</Chain>
+                    <Chain done>{retrieved.length} similar cases retrieved · {retrieved.map(r => r.score + '%').join(', ')}</Chain>
+                    <Chain done>Root cause confirmed</Chain>
+                    <Chain arrow>Part {diagnosis.part_number || 'none'} · in stock</Chain>
+                    <Chain arrow>RMA {diagnosis.rma_required ? 'required — label generated' : 'not required'}</Chain>
+                    <Chain arrow>Work order {woId} · NetSuite</Chain>
                   </div>
 
-                  {/* Workflow */}
-                  <div className="bg-white border border-[var(--border-default)] rounded-2xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-                    <div className="flex items-center gap-2 mb-4">
-                      <GitBranch size={15} className="text-[var(--red)]" />
-                      <p className="font-display text-[var(--text-primary)] text-lg">Workflow</p>
+                  {!approved ? (
+                    <div className="flex gap-2 mt-6">
+                      <button onClick={approve}
+                        className="flex-1 py-3 bg-[var(--red)] text-white font-mono-ui text-[13px] tracking-widest rounded-xl hover:opacity-90 transition-all">
+                        APPROVE & DISPATCH →
+                      </button>
+                      <button className="px-5 py-3 border border-[var(--border-default)] rounded-xl text-[var(--text-muted)] font-mono-ui text-[13px] hover:text-[var(--text-primary)] transition-colors">Flag for review</button>
                     </div>
-                    <div className="space-y-2.5">
-                      <Chain done>Ticket {ticketId} opened</Chain>
-                      <Chain done>{retrieved.length} similar cases retrieved · {retrieved.map(r => r.score + '%').join(', ')}</Chain>
-                      <Chain done>Root cause confirmed</Chain>
-                      <Chain arrow>Part {diagnosis.part_number || 'none'} · in stock</Chain>
-                      <Chain arrow>RMA {diagnosis.rma_required ? 'required — label generated' : 'not required'}</Chain>
-                      <Chain arrow>Work order {woId} · NetSuite</Chain>
+                  ) : (
+                    <div className="mt-6 space-y-2 rounded-xl bg-[var(--surface)] p-4">
+                      {approveStage >= 1 && <Dispatch active={approveStage === 1} done={approveStage > 1}>Creating work order in NetSuite…</Dispatch>}
+                      {approveStage >= 2 && <Dispatch active={approveStage === 2} done={approveStage > 2}>Checking {diagnosis.part_number || 'part'} inventory…</Dispatch>}
+                      {approveStage >= 3 && <Dispatch active={approveStage === 3} done={approveStage > 3}>Generating RMA return label…</Dispatch>}
+                      {approveStage >= 4 && (
+                        <div className="flex items-center gap-2 text-emerald-700">
+                          <CheckCircle size={14} /><span className="font-mono-ui text-[12px]">Dispatched. Field tech notified by SMS.</span>
+                        </div>
+                      )}
                     </div>
-
-                    {!approved ? (
-                      <div className="flex gap-2 mt-5">
-                        <button onClick={approve}
-                          className="flex-1 py-2.5 bg-[var(--red)] text-white font-mono-ui text-[12px] tracking-widest rounded-xl hover:opacity-90 transition-all">
-                          APPROVE & DISPATCH →
-                        </button>
-                        <button className="px-4 py-2.5 border border-[var(--border-default)] rounded-xl text-[var(--text-muted)] font-mono-ui text-[12px] hover:text-[var(--text-primary)] transition-colors">Flag</button>
-                      </div>
-                    ) : (
-                      <div className="mt-5 space-y-2 rounded-xl bg-[var(--surface)] p-4">
-                        {approveStage >= 1 && <Dispatch active={approveStage === 1} done={approveStage > 1}>Creating work order in NetSuite…</Dispatch>}
-                        {approveStage >= 2 && <Dispatch active={approveStage === 2} done={approveStage > 2}>Checking {diagnosis.part_number || 'part'} inventory…</Dispatch>}
-                        {approveStage >= 3 && <Dispatch active={approveStage === 3} done={approveStage > 3}>Generating RMA return label…</Dispatch>}
-                        {approveStage >= 4 && (
-                          <div className="flex items-center gap-2 text-emerald-700">
-                            <CheckCircle size={14} /><span className="font-mono-ui text-[12px]">Dispatched. Field tech notified by SMS.</span>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
+                  )}
                 </div>
 
                 {/* Fleet insight — readable amber */}
